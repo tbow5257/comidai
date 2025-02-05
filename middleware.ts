@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const user = await getAuthUser(request);
+  const user = await getAuthUser();
   
   if (!user) {
     // Redirect to auth page if no valid session

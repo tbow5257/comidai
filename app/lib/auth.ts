@@ -4,14 +4,17 @@ import type { NextRequest } from "next/server";
 import { db } from "./db";
 import { users } from "./db/schema";
 import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 
-export async function getAuthUser(request: NextRequest) {
-  const token = request.cookies.get('auth-token');
-  if (!token) return null;
+export async function getAuthUser() {
+  const cookieStore = await cookies();
+  const tokenCookie = cookieStore.get('auth-token');
+
+  if (!tokenCookie) return null;
 
   const user = await db.select()
     .from(users)
-    .where(eq(users.id, parseInt(token.value)))
+    .where(eq(users.id, parseInt(tokenCookie.value)))
     .then(rows => rows[0]);
 
   return user || null;

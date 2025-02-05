@@ -49,7 +49,7 @@ export default function AuthPage() {
         setIsLogin(true);
       }
     } catch (error) {
-      setError(error.message || "An error occurred");
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
