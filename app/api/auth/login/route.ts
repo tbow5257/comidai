@@ -8,11 +8,13 @@ import { eq } from "drizzle-orm";
 export async function POST(req: Request) {
   try {
     const { username, password } = await req.json();
-    
+    console.log('req.json  username, password', username, password)
+
     const user = await db.select()
       .from(users)
       .where(eq(users.username, username))
       .then(rows => rows[0]);
+      console.log('user = await db.select', user)
 
     if (!user || !user.password) {
       return NextResponse.json(
@@ -22,6 +24,8 @@ export async function POST(req: Request) {
     }
 
     const isPasswordValid = await compare(password, user.password);
+    console.log('isPasswordValid', isPasswordValid)
+
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: "Invalid credentials" },

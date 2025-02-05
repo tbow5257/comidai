@@ -8,14 +8,13 @@ import { AddFoodButton } from "@/components/add-food-button"; // We'll create th
 import { FoodLog } from "@/components/food-log";
 import { NutritionalChart } from "@/components/nutritional-chart";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { getServerSession } from "next-auth/next"
-
+import { getServerSession } from "next-auth/next";
 
 export default async function HomePage() {
-  const session = await getServerSession()
-  console.log('main page session', session)
+  const session = await getServerSession();
+  console.log("main page session", session);
   if (!session?.user) {
-    redirect("/api/auth/signin");
+    redirect("/auth");
   }
 
   // Fetch food logs server-side
