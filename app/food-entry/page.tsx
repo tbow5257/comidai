@@ -45,18 +45,14 @@ export default function FoodEntry() {
     },
   });
 
+  const router = useRouter();
+  
   async function onImageCapture(formData: FormData) {
     setAnalyzing(true);
     try {
-      const [firstFood] = await analyzeMutation.mutateAsync(formData);
-      form.reset({
-        name: firstFood.name,
-        portionSize: firstFood.portion,
-        calories: firstFood.calories,
-        protein: firstFood.protein_g.toString(),
-        carbs: firstFood.carbohydrates_g.toString(),
-        fat: firstFood.fat_g.toString(),
-      });
+      const res = await apiRequest("POST", "/api/analyze-food", formData);
+      const { analysisId } = await res.json();
+      router.push(`/food-entry/confirm?analysisId=${analysisId}`);
     } catch (error) {
       if (error instanceof Error) {
         toast({
