@@ -16,7 +16,6 @@ export default async function HomePage() {
   if (!user) {
     redirect("/auth");
   }
-
   // Fetch food logs server-side
   const logs = await db
     .select()

@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getAuthUser } from "./app/lib/auth";
+import { getMiddlewareUser } from "./app/lib/auth";
 
 export async function middleware(request: NextRequest) {
   // Don't protect auth-related routes
@@ -10,8 +10,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const user = await getAuthUser();
-  
+  const user = await getMiddlewareUser(request);
+  console.log('user cmmon', user)
+
   if (!user) {
     // Redirect to auth page if no valid session
     return NextResponse.redirect(new URL('/auth', request.url));

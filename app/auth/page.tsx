@@ -1,59 +1,19 @@
 
 'use client'
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useForm } from "react-hook-form";
 import type { InsertUser } from "../lib/db/schema";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-login";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
+  // TODO register
+  const { isLogin, isLoading, error, handleAuth, toggleMode } = useAuth();
   const form = useForm<InsertUser>();
 
-  const onSubmit = async (data: InsertUser) => {
-    setIsLoading(true);
-    setError("");
-    try {
-      if (isLogin) {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error);
-        }
-
-        router.push("/");
-      } else {
-        // Handle registration (you'll need to create this endpoint)
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error);
-        }
-
-        setIsLogin(true);
-      }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const onSubmit = form.handleSubmit(handleAuth);
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
@@ -64,7 +24,7 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             {error && <p className="text-red-500 mb-4">{error}</p>}
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <Input
                 {...form.register("username")}
                 placeholder="Username"
@@ -95,7 +55,7 @@ export default function AuthPage() {
                 type="button"
                 variant="link"
                 className="w-full"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => toggleMode}
               >
                 {isLogin
                   ? "Need an account? Register"
