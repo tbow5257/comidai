@@ -47,22 +47,22 @@ export async function POST(req: Request) {
         logWithTime(`Starting OpenAI analysis for ${analysisId}`);
         const analysis = await analyzeFoodImage(base64Image);
         logWithTime(`OpenAI analysis complete for ${analysisId}`, analysis);
+      
+        // const foodData = [];
         
-        const foodData = [];
-        
-        // Log progress through foods
-        for (const [index, food] of analysis.foods.entries()) {
-          logWithTime(`Processing food ${index + 1}/${analysis.foods.length} for ${analysisId}`);
-          const query = `${food.portion} ${food.name}`;
-          logWithTime(`Querying Nutritionix for: ${query}`);
-          const nutrition = await getNutritionInfo(query);
-          foodData.push({ ...food, ...nutrition });
-        }
+            // Start of Selection
+            // for (const [index, food] of analysis.foods.entries()) {
+              // logWithTime(`Processing food ${index + 1}/${analysis.foods.length} for ${analysisId}`);
+              // const query = `${food.portion} ${food.name}`;
+              // logWithTime(`Querying Nutritionix for: ${query}`);
+              // const nutrition = await getNutritionInfo(query);
+              // foodData.push({ ...food });
+            // }
 
-        logWithTime(`All foods processed for ${analysisId}`, foodData);
+            // logWithTime(`All foods processed for ${analysisId}`, foodData);
         
         // Store results
-        await client.set(`analysis:${analysisId}:results`, JSON.stringify(foodData));
+        await client.set(`analysis:${analysisId}:results`, JSON.stringify(analysis));
         await client.set(`analysis:${analysisId}:status`, "complete");
         logWithTime(`Analysis completed for ${analysisId}`);
         
