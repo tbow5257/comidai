@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { SelectFoodLog } from "@db/schema";
+import type { SelectFoodLog } from "@/lib/db/schema";
 
 export function FoodLog({ foodLogs }: { foodLogs: SelectFoodLog[] }) {
   return (

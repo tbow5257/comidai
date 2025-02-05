@@ -10,7 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { CameraUpload } from "@/components/camera-upload";
-import type { InsertFoodLog } from "@db/schema";
+import type { InsertFoodLog } from "@/lib/db/schema";
 
 type FoodAnalysis = {
   name: string;
