@@ -1,7 +1,7 @@
+
 'use client'
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,59 +9,49 @@ import { useForm } from "react-hook-form";
 import type { InsertUser } from "../lib/db/schema";
 import { Loader2 } from "lucide-react";
 
-async function getCsrfToken() {
-  const response = await fetch('/api/auth/csrf');
-  const data = await response.json();
-  return data.csrfToken;
-}
-
-async function testLogin(username:any, password: any) {
-  try {
-    const csrfToken = await getCsrfToken();
-
-    const response = await fetch('/api/auth/credentials', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        csrfToken,
-        username,
-        password,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Login failed:', errorData);
-      return;
-    }
-
-    const data = await response.json();
-    console.log('Login successful:', data);
-  } catch (error) {
-    console.error('Error during login:', error);
-  }
-}
-
-
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const { isLoading, user, login, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
   const form = useForm<InsertUser>();
-  
-  if (user) {
-    router.push("/");
-    return null;
-  }
 
   const onSubmit = async (data: InsertUser) => {
-    if (isLogin) {
-      await login(data);
-      // await testLogin(data.username, data.password)
-    } else {
-      // await registerMutation.mutateAsync(data);
+    setIsLoading(true);
+    setError("");
+    try {
+      if (isLogin) {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error);
+        }
+
+        router.push("/");
+      } else {
+        // Handle registration (you'll need to create this endpoint)
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error);
+        }
+
+        setIsLogin(true);
+      }
+    } catch (error) {
+      setError(error.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,6 +63,7 @@ export default function AuthPage() {
             <CardTitle>{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
           </CardHeader>
           <CardContent>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <Input
                 {...form.register("username")}
