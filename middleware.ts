@@ -11,7 +11,6 @@ export async function middleware(request: NextRequest) {
   }
 
   const user = await getMiddlewareUser(request);
-  console.log('user cmmon', user)
 
   if (!user) {
     // Redirect to auth page if no valid session

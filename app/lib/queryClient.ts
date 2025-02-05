@@ -10,12 +10,25 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown,
 ): Promise<Response> {
+  const headers: HeadersInit = data && !(data instanceof FormData)
+    ? { "Content-Type": "application/json" }
+    : {};
+
+  const body = data instanceof FormData ? data : data ? JSON.stringify(data) : undefined;
+
+  console.log('apiRequest sending:', {
+    method,
+    url,
+    headers: headers,
+    body: data instanceof FormData ? 'FormData' : body,
+  });
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers,
+    body,
     credentials: "include",
   });
 

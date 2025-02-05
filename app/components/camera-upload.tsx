@@ -56,6 +56,10 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
     if (file) {
       const formData = new FormData();
       formData.append("image", file);
+
+      for (const [key, value] of formData.entries()) {
+        console.log(`FormData Entry - ${key}:`, value);
+      }
       await onCapture(formData);
     }
   }
