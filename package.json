@@ -1,14 +1,13 @@
 {
-  "name": "rest-express",
+  "name": "comidai",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "NODE_ENV=production node dist/index.js",
+    "dev": "next dev",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "seed": "tsx ./app/lib/db/seed.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.4",
@@ -45,10 +44,13 @@
     "@replit/vite-plugin-shadcn-theme-json": "^0.0.4",
     "@tanstack/react-query": "^5.66.0",
     "@vercel/blob": "^0.27.1",
+    "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.27.2",
     "drizzle-orm": "^0.38.4",
     "drizzle-zod": "^0.6.1",
     "embla-carousel-react": "^8.3.0",
@@ -78,6 +80,7 @@
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/bcrypt": "^5.0.2",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/node": "^20.17.17",
     "@types/react": "^18.3.18",
@@ -85,11 +88,10 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.27.2",
     "esbuild": "^0.24.0",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.19.1",
+    "tsx": "^4.19.2",
     "typescript": "5.6.3",
     "vite": "^5.4.9"
   },
