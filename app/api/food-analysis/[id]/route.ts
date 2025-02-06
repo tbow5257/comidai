@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import Client from "@replit/database";
+import { Client as ObjectStorageClient } from '@replit/object-storage';
 
 const client = new Client();
+const storageClient = new ObjectStorageClient();
 
 export async function GET(
   req: Request,
@@ -49,7 +51,22 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ foods: JSON.parse(resultsResult.value) });
+    // grab image, process it to display
+    console.log('imageData ', `analysis:${id}:image`)
+    const imageData = await client.get(`analysis:${id}:image`);
+    
+    let base64Image = null;
+    if (imageData?.value.name) {
+      const downloadResult = await storageClient.downloadAsText(imageData.value.name);
+      if (downloadResult.ok) {
+        base64Image = downloadResult.value; // This is already base64
+      }
+    }
+
+    return NextResponse.json({ 
+      foods: JSON.parse(resultsResult.value), 
+      image: base64Image ? `data:image/jpeg;base64,${base64Image}` : null
+     });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message },

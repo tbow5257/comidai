@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Loader2 } from "lucide-react";
+import { toast, useToast } from "@/hooks/use-toast";
 
 interface Props {
   onCapture: (formData: FormData) => Promise<void>;
@@ -11,6 +12,7 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
   const [showCamera, setShowCamera] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { toast } = useToast()
 
   async function startCamera() {
     try {
@@ -19,8 +21,27 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
         videoRef.current.srcObject = stream;
         setShowCamera(true);
       }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+    } catch (err: any) {
+
+      if (err.name === 'NotFoundError') {
+        toast({
+          title: "Camera Not Found",
+          description: "No camera device detected. Please connect a camera and try again.",
+          variant: "destructive",
+        });
+      } else if (err.name === 'PermissionDeniedError') {
+        toast({
+          title: "Camera Access Denied",
+          description: "Please allow camera access in your browser settings.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Camera Error",
+          description: "An unexpected error occurred while accessing the camera.",
+          variant: "destructive",
+        });
+      }
     }
   }
 

@@ -23,6 +23,7 @@ import { FoodProfile } from "@/lib/openai";
 type AnalysisResponse = {
   status?: 'pending' | 'complete';
   foods?: FoodProfile[];
+  image?: string;
   error?: string;
 }
 
@@ -32,6 +33,7 @@ export default function ConfirmFoodEntry() {
   const { toast } = useToast();
   const analysisId = searchParams.get('analysisId');
   const [foods, setFoods] = useState<FoodProfile[]>([]);
+  const [imageData, setImageData] = useState<string | null>(null);
 
   const { data, isError, error, isLoading } = useQuery<AnalysisResponse>({
     queryKey: ['foodAnalysis', analysisId],
@@ -41,7 +43,8 @@ export default function ConfirmFoodEntry() {
       if (res.status === 202) return { status: 'pending' };
       const data: AnalysisResponse = await res.json();
       if (data.error) throw new Error(data.error);
-      return { status: 'complete', foods: data?.foods?.foods };
+      console.log('data', data)
+      return { status: 'complete', foods: data?.foods?.foods, image: data.image };
     },
     refetchInterval: (query) => {
 
@@ -69,6 +72,9 @@ export default function ConfirmFoodEntry() {
     if (data?.foods) {
       setFoods(data.foods);
     }
+    if (data?.image) {
+      setImageData(data.image);
+    }  
   }, [data]);
 
   const submitMutation = useMutation({
@@ -116,6 +122,15 @@ export default function ConfirmFoodEntry() {
           <CardTitle>Confirm Food Analysis</CardTitle>
         </CardHeader>
         <CardContent>
+        {imageData && (
+          <div className="mb-6">
+            <img 
+              src={imageData} 
+              alt="Food analysis" 
+              className="max-w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+          )}
           {foods.map((food, i) => (
             <div key={i} className="space-y-4 mb-6 p-4 border rounded">
               <div className="grid grid-cols-2 gap-4">
