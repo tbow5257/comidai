@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { InsertFoodLog } from "@/lib/db/schema";
 import { FoodProfile } from "@/lib/openai";
+import Image from 'next/image'
 
 // old food analysis
 // type FoodAnalysis = {
@@ -26,6 +27,15 @@ type AnalysisResponse = {
   image?: string;
   error?: string;
 }
+
+const getImageSrc = (base64String: string) => {
+  // Check if it's already a data URL
+  if (base64String.startsWith('data:image')) {
+    return base64String;
+  }
+  // Add proper data URL prefix for images
+  return `data:image/jpeg;base64,${base64String}`;
+};
 
 export default function ConfirmFoodEntry() {
   const router = useRouter();
@@ -123,14 +133,19 @@ export default function ConfirmFoodEntry() {
         </CardHeader>
         <CardContent>
         {imageData && (
-          <div className="mb-6">
-            <img 
-              src={imageData} 
-              alt="Food analysis" 
-              className="max-w-full h-auto rounded-lg shadow-lg"
-            />
-          </div>
-          )}
+            <div className="mb-6 flex justify-center">
+              <div className="relative w-full max-w-[900px] md:w-1/2 aspect-[3/2]">
+                <Image 
+                  src={getImageSrc(imageData)}
+                  alt="Food analysis"
+                  fill
+                  className="rounded-lg shadow-lg object-contain"
+                  priority
+                  unoptimized // Since we're using data URLs
+                />
+              </div>
+            </div>
+        )}
           {foods.map((food, i) => (
             <div key={i} className="space-y-4 mb-6 p-4 border rounded">
               <div className="grid grid-cols-2 gap-4">
