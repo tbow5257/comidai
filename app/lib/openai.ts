@@ -3,9 +3,12 @@ import OpenAI from "openai";
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export type FoodProfile = {
+export interface FoodProfile {
   name: string;
-  estimated_portion: string;
+  estimated_portion:  {
+    count: number;
+    unit: string;
+  };
   size_description: string;
   typical_serving: string;
   calories: number;
@@ -25,13 +28,16 @@ export async function analyzeFoodImage(base64Image: string): Promise<{
                 // Start of Selection
                 text: `
                   Analyze this food image and identify each food item.
-                  For each item, provide the estimated portion size, describe the size using common household items (e.g., palm sized, golf ball), and include typical serving size metrics with calories.
+                  For each item, provide the estimated portion size, describe the size using common household items (e.g., palm sized, golf ball) with separate count and unit, and include typical serving size metrics with calories.
                   Respond with JSON in the following format:
                   {
                     foods: [
                       {
                         name: string,
-                        estimated_portion: string,
+                        estimated_portion: {
+                          count: number,
+                          unit: string
+                        },
                         size_description: string,
                         typical_serving: string,
                         calories: number

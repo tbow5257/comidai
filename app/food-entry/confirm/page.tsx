@@ -10,6 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { InsertFoodLog } from "@/lib/db/schema";
 import { FoodProfile } from "@/lib/openai";
 import Image from 'next/image'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import SelectCreatable from "@/components/ui/select-creatable";
 
 // old food analysis
 // type FoodAnalysis = {
@@ -60,9 +68,7 @@ export default function ConfirmFoodEntry() {
 
       return query?.state?.data?.status === 'pending' ? 1000 : false
     },
-    retry: (failureCount, error) => {
-      return error instanceof Error && error.message !== 'pending';
-    },
+    retry: (failureCount, error) => failureCount < 2 && error instanceof Error && error.message !== 'pending',
   });
   
   // Handle error state
@@ -149,34 +155,49 @@ export default function ConfirmFoodEntry() {
           {foods.map((food, i) => (
             <div key={i} className="space-y-4 mb-6 p-4 border rounded">
               <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  value={food.name}
-                  onChange={e => {
+                <SelectCreatable 
+                  // possibly async populate with DB options
+                  options={[{label: 'salmon', value: 'salmon'}, {label: 'chicken', value: 'chicken'}, {label: 'beef', value: 'beef'}]}
+                  value={{label: food.name, value: food.name}}
+                  onChange={(newValue) => {
                     const newFoods = [...foods];
-                    newFoods[i].name = e.target.value;
+                    newFoods[i].name = newValue.value;
                     setFoods(newFoods);
                   }}
-                  placeholder="Food name"
-                />
-                <Input 
-                  value={food.estimated_portion}
-                  onChange={e => {
-                    const newFoods = [...foods];
-                    newFoods[i].estimated_portion = e.target.value;
-                    setFoods(newFoods);
+                  onCreateOption={(label) => {
+                    console.log('Create option', label);
+                    // TODO: API (LLM) ask it whether it makes sense as a food item
+                    // 
+                    // 
+                    // - If it makes sense as a food item, go with what the user has inputted
+                    // - If it sounds strange using some kind of judgment system prompt them with a pop-up like are you sure you want to put this in that kind of thing
                   }}
-                  placeholder="Estimated Portion"
                 />
-                <Input 
-                  value={food.size_description}
-                  onChange={e => {
-                    const newFoods = [...foods];
-                    newFoods[i].size_description = e.target.value;
-                    setFoods(newFoods);
-                  }}
-                  placeholder="Size Description"
-                />
-                <Input 
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    type="number"
+                    value={food.estimated_portion.count}
+                    onChange={e => {
+                      const newFoods = [...foods];
+                      newFoods[i].estimated_portion.count = parseInt(e.target.value);
+                      setFoods(newFoods);
+                    }}
+                    placeholder="Estimated Portion"
+                  />
+                  <Select>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder={food.estimated_portion.unit}>{food.estimated_portion.unit}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="grams">grams</SelectItem>
+                      <SelectItem value="ounces">ounces</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p>Typical Portion Size: {food.size_description}. Typical Serving: {food.typical_serving}</p>
+                </div>
+                {/* <Input 
                   value={food.typical_serving}
                   onChange={e => {
                     const newFoods = [...foods];
@@ -184,26 +205,48 @@ export default function ConfirmFoodEntry() {
                     setFoods(newFoods);
                   }}
                   placeholder="Typical Serving"
-                />
-                <Input 
-                  type="number"
-                  value={food.calories}
-                  onChange={e => {
-                    const newFoods = [...foods];
-                    newFoods[i].calories = Number(e.target.value);
-                    setFoods(newFoods);
-                  }}
-                  placeholder="Calories"
-                />
+                /> */}
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    type="number"
+                    value={food.calories}
+                    onChange={e => {
+                      const newFoods = [...foods];
+                      newFoods[i].calories = Number(e.target.value);
+                      setFoods(newFoods);
+                    }}
+                    placeholder="Calories"
+                  />
+                  <span>cal/kcal</span>
+                </div>
                 <Button 
                   // onClick={() => handleSubmit(food)}
                   className="w-full"
                 >
                   Log This Food
                 </Button>
+                <Button variant="destructive" className="w-1/2"
+                  onClick={() => {
+                    const newFoods = [...foods];
+                    newFoods.splice(i, 1);
+                    setFoods(newFoods);
+                  }}
+                >
+                  Remove
+                </Button>
               </div>
             </div>
           ))}
+          <div className="flex justify-center">
+            <Button
+              onClick={() => {
+                // TODO: Implement logic to handle all foods at once
+                console.log("Logging all foods:", foods);
+              }}
+            >
+              Accept All Foods
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
