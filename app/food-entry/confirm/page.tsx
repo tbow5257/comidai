@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -10,14 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { InsertFoodLog } from "@/lib/db/schema";
 import { FoodProfile } from "@/lib/openai";
 import Image from 'next/image'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import SelectCreatable from "@/components/ui/select-creatable";
+import FoodEntryItem from "./food-entry-item";
 
 // old food analysis
 // type FoodAnalysis = {
@@ -153,90 +145,31 @@ export default function ConfirmFoodEntry() {
             </div>
         )}
           {foods.map((food, i) => (
-            <div key={i} className="space-y-4 mb-6 p-4 border rounded">
-              <div className="grid grid-cols-2 gap-4">
-                <SelectCreatable 
-                  // possibly async populate with DB options
-                  options={[{label: 'salmon', value: 'salmon'}, {label: 'chicken', value: 'chicken'}, {label: 'beef', value: 'beef'}]}
-                  value={{label: food.name, value: food.name}}
-                  onChange={(newValue) => {
-                    const newFoods = [...foods];
-                    newFoods[i].name = newValue.value;
-                    setFoods(newFoods);
-                  }}
-                  onCreateOption={(label) => {
-                    console.log('Create option', label);
-                    // TODO: API (LLM) ask it whether it makes sense as a food item
-                    // 
-                    // 
-                    // - If it makes sense as a food item, go with what the user has inputted
-                    // - If it sounds strange using some kind of judgment system prompt them with a pop-up like are you sure you want to put this in that kind of thing
-                  }}
-                />
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    type="number"
-                    value={food.estimated_portion.count}
-                    onChange={e => {
-                      const newFoods = [...foods];
-                      newFoods[i].estimated_portion.count = parseInt(e.target.value);
-                      setFoods(newFoods);
-                    }}
-                    placeholder="Estimated Portion"
-                  />
-                  <Select>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder={food.estimated_portion.unit}>{food.estimated_portion.unit}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="grams">grams</SelectItem>
-                      <SelectItem value="ounces">ounces</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <p>Typical Portion Size: {food.size_description}. Typical Serving: {food.typical_serving}</p>
-                </div>
-                {/* <Input 
-                  value={food.typical_serving}
-                  onChange={e => {
-                    const newFoods = [...foods];
-                    newFoods[i].typical_serving = e.target.value;
-                    setFoods(newFoods);
-                  }}
-                  placeholder="Typical Serving"
-                /> */}
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    type="number"
-                    value={food.calories}
-                    onChange={e => {
-                      const newFoods = [...foods];
-                      newFoods[i].calories = Number(e.target.value);
-                      setFoods(newFoods);
-                    }}
-                    placeholder="Calories"
-                  />
-                  <span>cal/kcal</span>
-                </div>
-                <Button 
-                  // onClick={() => handleSubmit(food)}
-                  className="w-full"
-                >
-                  Log This Food
-                </Button>
-                <Button variant="destructive" className="w-1/2"
-                  onClick={() => {
-                    const newFoods = [...foods];
-                    newFoods.splice(i, 1);
-                    setFoods(newFoods);
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-            </div>
+            <FoodEntryItem
+            key={i}
+            food={food}
+            onUpdate={(updatedFood) => {
+              const newFoods = [...foods];
+              newFoods[i] = updatedFood;
+              setFoods(newFoods);
+            }}
+            onRemove={() => {
+              const newFoods = [...foods];
+              newFoods.splice(i, 1);
+              setFoods(newFoods);
+            }}
+            />
           ))}
+          <div className="flex justify-between">
+            <div>
+              <p className="text-sm font-medium">
+                Calories: {foods.reduce((sum, food) => sum + (food.calories || 0), 0)}
+              </p>
+              <p className="text-sm font-medium">
+                Protein: {foods.reduce((sum, food) => sum + (food.protein || 0), 0)}g
+              </p>
+            </div>
+
           <div className="flex justify-center">
             <Button
               onClick={() => {
@@ -246,6 +179,7 @@ export default function ConfirmFoodEntry() {
             >
               Accept All Foods
             </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
