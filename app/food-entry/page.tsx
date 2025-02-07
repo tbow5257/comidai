@@ -1,106 +1,153 @@
-"use client"
+'use client'
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { CameraUpload } from "@/components/camera-upload";
-import type { InsertFoodLog } from "@/lib/db/schema";
-
-type FoodAnalysis = {
-  name: string;
-  portion: string;
-  calories: number;
-  protein_g: number;
-  carbohydrates_g: number;
-  fat_g: number;
-};
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import Image from 'next/image'
+import type { FoodProfile } from "@/lib/openai";
+import { useRouter } from "next/navigation";
+import FoodEntryItem from "./food-entry-item";
 
 export default function FoodEntry() {
-  // const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const [analyzing, setAnalyzing] = useState(false);
-  const form = useForm<InsertFoodLog>();
+  const router = useRouter();
+  const [foods, setFoods] = useState<FoodProfile[]>([]);
+  const [imageData, setImageData] = useState<string | null>(null);
 
-  const analyzeMutation = useMutation({
+  const analysisMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const res = await apiRequest("POST", "/api/analyze-food", formData);
-      return res.json() as Promise<FoodAnalysis[]>;
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Analysis failed');
+      }
+      return res.json();
     },
+    onSuccess: (data) => {
+      setFoods(data.foods);
+      setImageData(data.image);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Analysis failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (data: InsertFoodLog) => {
-      await apiRequest("POST", "/api/food-logs", data);
+    mutationFn: async (foods: FoodProfile[]) => {
+      const payload = {
+        userId: 1, // TODO: Get from auth context
+        name: `Meal ${new Date().toLocaleTimeString()}`,
+        foodLogs: foods.map(food => ({
+          name: food.name,
+          calories: food.calories,
+          protein: food.protein,
+          portionSize: food.estimated_portion.count,
+          portionUnit: food.estimated_portion.unit
+        }))
+      };
+      
+      return await apiRequest("POST", "/api/meals", payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/food-logs"] });
-      // setLocation("/");
-      toast({ title: "Food logged successfully!" });
+      toast({ title: "Meal logged successfully!" });
+      router.push('/');
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to log meal",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
-  const router = useRouter();
-  
-  async function onImageCapture(formData: FormData) {
-    setAnalyzing(true);
-    try {
-      const res = await apiRequest("POST", "/api/analyze-food", formData);
-      const { analysisId } = await res.json();
-      console.log('analysisId ', analysisId)
-      router.push(`/food-entry/confirm?analysisId=${analysisId}`);
-    } catch (error) {
-      if (error instanceof Error) {
-        toast({
-          title: "Analysis failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Analysis failed",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setAnalyzing(false);
-    }
-  }
-
   return (
-    <div className="container mx-auto py-6 max-w-lg">
+    <div className="container mx-auto py-6">
       <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-6">
-            <CameraUpload onCapture={onImageCapture} analyzing={analyzing} />
+        <CardHeader>
+          <CardTitle>Log Your Food</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!foods.length && (
+            <CameraUpload 
+            onCapture={(formData) => {
+              analysisMutation.mutate(formData);
+            }}
+            analyzing={analysisMutation.isPending}
+            />
+          )}
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(data => submitMutation.mutate(data))} 
-                    className="space-y-4">
-                <Input {...form.register("name")} placeholder="Food name" />
-                <Input {...form.register("portionSize")} placeholder="Portion size" />
-                <Input {...form.register("calories", { valueAsNumber: true })} 
-                       type="number" placeholder="Calories" />
-                <Input {...form.register("protein")} 
-                       type="number" step="0.1" placeholder="Protein (g)" />
-                <Input {...form.register("carbs")} 
-                       type="number" step="0.1" placeholder="Carbs (g)" />
-                <Input {...form.register("fat")} 
-                       type="number" step="0.1" placeholder="Fat (g)" />
+          {imageData && (
+            <div className="mb-6 flex justify-center">
+              <div className="relative w-full max-w-[900px] md:w-1/2 aspect-[3/2]">
+                <Image 
+                  src={imageData}
+                  alt="Food analysis"
+                  fill
+                  className="rounded-lg shadow-lg object-contain"
+                  priority
+                  unoptimized
+                />
+              </div>
+            </div>
+          )}
 
-                <Button type="submit" className="w-full" 
-                        disabled={submitMutation.isPending}>
-                  Log Food
-                </Button>
-              </form>
-            </Form>
-          </div>
+          {foods.length > 0 && (
+            <>
+              {foods.map((food, i) => (
+                <FoodEntryItem
+                  key={i}
+                  food={food}
+                  onUpdate={(updatedFood) => {
+                    const newFoods = [...foods];
+                    newFoods[i] = updatedFood;
+                    setFoods(newFoods);
+                  }}
+                  onRemove={() => {
+                    const newFoods = [...foods];
+                    newFoods.splice(i, 1);
+                    setFoods(newFoods);
+                  }}
+                />
+              ))}
+
+              <div className="flex justify-between mt-4">
+                <div>
+                  <p className="text-sm font-medium">
+                    Total Calories: {foods.reduce((sum, food) => sum + (food.calories || 0), 0)}
+                  </p>
+                  <p className="text-sm font-medium">
+                    Total Protein: {foods.reduce((sum, food) => sum + (food.protein || 0), 0)}g
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFoods([]);
+                      setImageData(null);
+                    }}
+                  >
+                    Start Over
+                  </Button>
+                  <Button
+                    onClick={() => submitMutation.mutate(foods)}
+                    disabled={foods.length === 0 || submitMutation.isPending}
+                  >
+                    {submitMutation.isPending ? "Saving..." : "Log Meal"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

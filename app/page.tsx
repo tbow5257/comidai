@@ -1,9 +1,9 @@
 // app/page.tsx
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { foodLogs } from "@/lib/db/schema";
+import { foodLogs, meals } from "@/lib/db/schema";
 import { AddFoodButton } from "@/components/add-food-button"; // We'll create this
 import { FoodLog } from "@/components/food-log";
 import { NutritionalChart } from "@/components/nutritional-chart";
@@ -18,10 +18,30 @@ export default async function HomePage() {
   }
   // Fetch food logs server-side
   const logs = await db
-    .select()
-    .from(foodLogs)
-    .where(eq(foodLogs.userId, user.id))
-    .orderBy(foodLogs.createdAt);
+  .select({
+    id: foodLogs.id,
+    name: foodLogs.name,
+    calories: foodLogs.calories,
+    protein: foodLogs.protein,
+    portionSize: foodLogs.portionSize,
+    portionUnit: foodLogs.portionUnit,
+    createdAt: foodLogs.createdAt,
+    meal: {
+      id: meals.id,
+      name: meals.name,
+      createdAt: meals.createdAt,
+    }
+  })
+  .from(foodLogs)
+  .innerJoin(meals, eq(meals.id, foodLogs.mealId))
+  .where(
+    and(
+      eq(meals.userId, user.id),
+      // Optional: Add date filtering here if needed
+      // gte(meals.createdAt, startOfDay(new Date()))
+    )
+  )
+  .orderBy(desc(foodLogs.createdAt)); // Most recent first
 
   const today = new Date().toLocaleDateString();
 

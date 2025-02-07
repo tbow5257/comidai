@@ -55,10 +55,20 @@ export const foodLogRelations = relations(foodLogs, ({ one }) => ({
 
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
-export const insertFoodLogSchema = createInsertSchema(foodLogs);
+export const insertFoodLogSchema = createInsertSchema(foodLogs, {
+  calories: (schema) => schema.min(0).max(5000), // Reasonable calorie range
+  protein: (schema) => schema.min(0).max(500),   // Reasonable protein range
+  portionSize: (schema) => schema.min(0),        // No negative portions
+  portionUnit: (schema) => schema.refine(
+    (val) => ['g', 'oz'].includes(val), 
+    { message: "Portion unit must be 'g' or 'oz'" }
+  )
+});
 export const selectFoodLogSchema = createSelectSchema(foodLogs);
+export const insertMealSchema = createInsertSchema(meals);
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertFoodLog = typeof foodLogs.$inferInsert;
+export type InsertMeal = typeof meals.$inferInsert;
 export type SelectFoodLog = typeof foodLogs.$inferSelect;

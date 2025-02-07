@@ -15,7 +15,6 @@ async function seed() {
       await db.insert(users).values({
         username: "test",
         password: hashedPassword,
-        email: "test@example.com",
       }).execute();
     }
   }

@@ -4,7 +4,7 @@ import { Camera, Upload, Loader2 } from "lucide-react";
 import { toast, useToast } from "@/hooks/use-toast";
 
 interface Props {
-  onCapture: (formData: FormData) => Promise<void>;
+  onCapture: (formData: FormData) => void;
   analyzing: boolean;
 }
 

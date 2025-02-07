@@ -11,6 +11,6 @@ export function logWithTime (message: string, data?: any) {
 };
 
 
-export function xlogWithTime (_: string, __: any) {
+export function xlogWithTime (_?: string, __?: any) {
   // inert to support switching on and off
 };
