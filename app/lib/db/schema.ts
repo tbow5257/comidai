@@ -18,21 +18,38 @@ export const authSchema = z.object({
 
 export const foodLogs = pgTable("food_logs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  mealId: integer("meal_id").references(() => meals.id).notNull(),
   name: text("name").notNull(),
   calories: integer("calories").notNull(),
-  protein: decimal("protein").notNull(),
-  carbs: decimal("carbs").notNull(),
-  fat: decimal("fat").notNull(),
-  portionSize: text("portion_size").notNull(),
-  imageUrl: text("image_url"),
+  protein: integer("protein").notNull(),
+  portionSize: integer("portion_size").notNull(),
+  portionUnit: text("name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // TODO: maybe implement more later
+  // carbs: decimal("carbs").notNull(),
+  // fat: decimal("fat").notNull(),
+  // imageUrl: text("image_url"),
 });
 
-export const foodLogRelations = relations(foodLogs, ({ one }) => ({
+export const meals = pgTable("meals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  name: text("name").notNull(),
+});
+
+export const mealRelations = relations(meals, ({ one, many }) => ({
   user: one(users, {
-    fields: [foodLogs.userId],
+    fields: [meals.userId],
     references: [users.id],
+  }),
+  foodLogs: many(foodLogs),
+}));
+
+export const foodLogRelations = relations(foodLogs, ({ one }) => ({
+  meal: one(meals, {
+    fields: [foodLogs.mealId],
+    references: [meals.id],
   }),
 }));
 

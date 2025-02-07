@@ -1,0 +1,2 @@
+ALTER TABLE "food_logs" ALTER COLUMN "protein" SET DATA TYPE integer;--> statement-breakpoint
+ALTER TABLE "food_logs" ALTER COLUMN "portion_size" TYPE integer USING CASE WHEN portion_size ~ '^[0-9]+$' THEN portion_size::integer ELSE 0 END;

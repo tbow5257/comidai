@@ -54,7 +54,7 @@ export default function ConfirmFoodEntry() {
       const data: AnalysisResponse = await res.json();
       if (data.error) throw new Error(data.error);
       console.log('data', data)
-      return { status: 'complete', foods: data?.foods?.foods, image: data.image };
+      return { status: 'complete', foods: data?.foods, image: data.image };
     },
     refetchInterval: (query) => {
 

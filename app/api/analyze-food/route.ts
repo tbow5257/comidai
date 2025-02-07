@@ -77,8 +77,8 @@ export async function POST(req: Request) {
       try {
         // Log each step of the process
         logWithTime(`Starting OpenAI analysis for ${analysisId}`);
-        const analysis = await analyzeFoodImage(base64Image);
-        logWithTime(`OpenAI analysis complete for ${analysisId}`, analysis);
+        const { foods } = await analyzeFoodImage(base64Image);
+        logWithTime(`OpenAI analysis complete for ${analysisId}, foods:`, foods);
       
         // TODO: defer usage of nutritionx, decide later whether necessary (openai can do alot)
         // const foodData = [];
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
         // logWithTime(`All foods processed for ${analysisId}`, foodData);
         
         // Store results
-        await kvClient.set(`analysis:${analysisId}:results`, JSON.stringify(analysis));
+        await kvClient.set(`analysis:${analysisId}:results`, JSON.stringify(foods));
         await kvClient.set(`analysis:${analysisId}:status`, "complete");
         logWithTime(`Analysis completed for ${analysisId}`);        
         
