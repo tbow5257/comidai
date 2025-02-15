@@ -13,7 +13,10 @@ export async function apiRequest(
   data?: unknown,
 ): Promise<Response> {
   const headers: HeadersInit = data && !(data instanceof FormData)
-    ? { "Content-Type": "application/json" }
+    ? { "Content-Type": "application/json",
+        "x-forwarded-host": window.location.host,
+        "origin": window.location.origin,
+     }
     : {};
 
   const body = data instanceof FormData ? data : data ? JSON.stringify(data) : undefined;

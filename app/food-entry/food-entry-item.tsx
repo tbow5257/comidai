@@ -77,9 +77,11 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
         <div className="flex items-center space-x-2">
           <Input
             type="number"
-            value={food.estimated_portion.count}
+            step="0.1"
+            value={Math.round(food.estimated_portion.count * 10) / 10}
             onChange={(e) => updateProportionally(Number(e.target.value), 'portion')}
             className="w-24"
+            min={0}
           />
           <Select
             value={food.estimated_portion.unit}
@@ -107,7 +109,9 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
         <div className="flex items-center space-x-2">
           <Input
             type="number"
-            value={food.calories}
+            value={Math.round(food.calories)}
+            min={0}
+            step={1}
             onChange={(e) => updateProportionally(Number(e.target.value), 'calories')}
             className="w-24"
           />
@@ -115,8 +119,15 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
           
           <Input
             type="number"
-            value={food.protein}
-            onChange={(e) => updateProportionally(Number(e.target.value), 'protein')}
+            value={Math.round(food.protein * 10) / 10}
+            min={0}
+            step="0.1"
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              if (!isNaN(value)) {
+                updateProportionally(Math.round(value * 10) / 10, 'protein');
+              }
+            }}
             className="w-24"
           />
           <span>protein (g)</span>

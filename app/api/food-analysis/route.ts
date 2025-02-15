@@ -3,7 +3,7 @@ import { analyzeFoodImage } from "@/lib/openai";
 // import { getNutritionInfo } from "@/lib/nutritionix";
 import Client from "@replit/database";
 import { Client as ObjectStorageClient } from '@replit/object-storage';
-import { xlogWithTime } from "@/lib/utils";
+import { logWithTime } from "@/lib/utils";
 
 const kvClient = new Client();
 const storageClient = new ObjectStorageClient();
@@ -11,7 +11,7 @@ const storageClient = new ObjectStorageClient();
 export async function POST(req: Request) {
   try {
     const contentType = req.headers.get("Content-Type");
-    xlogWithTime("Incoming Content-Type:", contentType);
+    logWithTime("Incoming Content-Type:", contentType);
 
     if (!contentType?.startsWith("multipart/form-data")) {
       return NextResponse.json(
@@ -22,17 +22,17 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const image = formData.get("image") as Blob;
-    xlogWithTime("Image blob received:", {
+    logWithTime("Image blob received:", {
       size: image.size,
       type: image.type
     });
 
     const base64Image = Buffer.from(await image.arrayBuffer()).toString("base64");
-    xlogWithTime("Base64 image created", { length: base64Image.length });
+    logWithTime("Base64 image created", { length: base64Image.length });
 
-    xlogWithTime("Starting OpenAI analysis");
+    logWithTime("Starting OpenAI analysis");
     const { foods } = await analyzeFoodImage(base64Image);
-    xlogWithTime("OpenAI analysis complete, foods:", foods);
+    logWithTime("OpenAI analysis complete, foods:", foods);
 
     return NextResponse.json({ 
       foods,
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    xlogWithTime('Error in analyze-food handler', {
+    logWithTime('Error in analyze-food handler', {
       error: error.message,
       stack: error.stack
     });

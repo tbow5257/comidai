@@ -21,9 +21,9 @@ export const foodLogs = pgTable("food_logs", {
   mealId: integer("meal_id").references(() => meals.id).notNull(),
   name: text("name").notNull(),
   calories: integer("calories").notNull(),
-  protein: integer("protein").notNull(),
-  portionSize: integer("portion_size").notNull(),
-  portionUnit: text("name").notNull(),
+  protein: decimal("protein", { precision: 6, scale: 1 }).notNull(),
+  portionSize: decimal("portion_size", { precision: 6, scale: 1 }).notNull(),
+  portionUnit: text("portionUnit").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   // TODO: maybe implement more later
   // carbs: decimal("carbs").notNull(),
@@ -56,9 +56,6 @@ export const foodLogRelations = relations(foodLogs, ({ one }) => ({
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertFoodLogSchema = createInsertSchema(foodLogs, {
-  calories: (schema) => schema.min(0).max(5000), // Reasonable calorie range
-  protein: (schema) => schema.min(0).max(500),   // Reasonable protein range
-  portionSize: (schema) => schema.min(0),        // No negative portions
   portionUnit: (schema) => schema.refine(
     (val) => ['g', 'oz'].includes(val), 
     { message: "Portion unit must be 'g' or 'oz'" }

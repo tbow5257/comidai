@@ -1,6 +1,5 @@
-// app/api/meals/route.ts
 import { NextResponse } from "next/server";
-// import { db } from "@/lib/db";
+import { db } from "@/lib/db";
 import { meals, foodLogs, insertFoodLogSchema, insertMealSchema } from "@/lib/db/schema";
 import { z } from "zod";
 
@@ -19,7 +18,6 @@ export const createMealPayloadSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    return
     const body = await req.json();
     const parsed = createMealPayloadSchema.safeParse(body);
     if (!parsed.success) {

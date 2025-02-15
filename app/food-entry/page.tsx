@@ -19,7 +19,7 @@ export default function FoodEntry() {
 
   const analysisMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await apiRequest("POST", "/api/analyze-food", formData);
+      const res = await apiRequest("POST", "/api/food-analysis", formData);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || 'Analysis failed');
@@ -47,8 +47,8 @@ export default function FoodEntry() {
         foodLogs: foods.map(food => ({
           name: food.name,
           calories: food.calories,
-          protein: food.protein,
-          portionSize: food.estimated_portion.count,
+          protein: food.protein.toString(),
+          portionSize: food.estimated_portion.count.toString(),
           portionUnit: food.estimated_portion.unit
         }))
       };

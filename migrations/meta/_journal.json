@@ -22,6 +22,20 @@
       "when": 1738892305526,
       "tag": "0002_minor_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1739584730216,
+      "tag": "0003_gray_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1739585263631,
+      "tag": "0004_slimy_leopardon",
+      "breakpoints": true
     }
   ]
 }

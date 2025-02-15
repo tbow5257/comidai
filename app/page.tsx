@@ -68,7 +68,7 @@ export default async function HomePage() {
           <CardHeader>
             <CardTitle>Recent Meals</CardTitle>
           </CardHeader>
-          <FoodLog foodLogs={logs} />
+          {/* <FoodLog foodLogs={logs} /> */}
         </Card>
       </div>
     </div>

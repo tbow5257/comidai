@@ -16,7 +16,17 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['http://localhost:3000', '*.replit.com', '*.replit.dev']
+      bodySizeLimit: '2mb', 
+      allowedOrigins: [
+        'http://localhost:3000',
+        '*.replit.com',
+        '*.replit.dev',
+        '*.vercel.app',
+        '*.vercel.com',
+        '*.vercel.dev',
+        '*.spock.replit.dev',
+        '*.spock.replit.dev:3000'
+      ]
     },
   },
   webpack: (config) => {
