@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeFoodImage } from "@/lib/openai";
 // import { getNutritionInfo } from "@/lib/nutritionix";
-import Client from "@replit/database";
-import { Client as ObjectStorageClient } from '@replit/object-storage';
 import { logWithTime } from "@/lib/utils";
-
-const kvClient = new Client();
-const storageClient = new ObjectStorageClient();
 
 export async function POST(req: Request) {
   try {
@@ -31,10 +26,11 @@ export async function POST(req: Request) {
     logWithTime("Base64 image created", { length: base64Image.length });
 
     logWithTime("Starting OpenAI analysis");
-    const { foods } = await analyzeFoodImage(base64Image);
+    const { meal_summary, foods } = await analyzeFoodImage(base64Image);
     logWithTime("OpenAI analysis complete, foods:", foods);
 
     return NextResponse.json({ 
+      meal_summary,
       foods,
       image: `data:image/jpeg;base64,${base64Image}`
     });

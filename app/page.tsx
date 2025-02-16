@@ -9,6 +9,7 @@ import { FoodLog } from "@/components/food-log";
 import { NutritionalChart } from "@/components/nutritional-chart";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuthUser } from "./lib/auth";
+import { GroupedLogs } from "@/components/food-log";
 
 export default async function HomePage() {
   const user = await getAuthUser()
@@ -16,38 +17,36 @@ export default async function HomePage() {
   if (!user) {
     redirect("/auth");
   }
-  // Fetch food logs server-side
-  const logs = await db
-  .select({
-    id: foodLogs.id,
-    name: foodLogs.name,
-    calories: foodLogs.calories,
-    protein: foodLogs.protein,
-    portionSize: foodLogs.portionSize,
-    portionUnit: foodLogs.portionUnit,
-    createdAt: foodLogs.createdAt,
-    meal: {
-      id: meals.id,
-      name: meals.name,
-      createdAt: meals.createdAt,
-    }
-  })
-  .from(foodLogs)
-  .innerJoin(meals, eq(meals.id, foodLogs.mealId))
-  .where(
-    and(
-      eq(meals.userId, user.id),
-      // Optional: Add date filtering here if needed
-      // gte(meals.createdAt, startOfDay(new Date()))
-    )
-  )
-  .orderBy(desc(foodLogs.createdAt)); // Most recent first
+
+  const mealsWithLogs = await db.query.meals.findMany({
+    with: {
+      foodLogs: true
+    },
+    where: eq(meals.userId, user.id),
+    orderBy: desc(meals.createdAt),
+    limit: 5
+  });
+
+  const groupedLogs = mealsWithLogs.reduce<GroupedLogs>((acc, meal) => {
+    acc[meal.id] = {
+      mealName: meal.name,
+      createdAt: meal.createdAt,
+      logs: meal.foodLogs.map(log => ({
+        ...log,
+        meal: {
+          id: meal.id,
+          name: meal.name,
+          createdAt: meal.createdAt
+        }
+      }))
+    };
+    return acc;
+  }, {});
 
   const today = new Date().toLocaleDateString();
-
-  const todaysCalories = logs
-    ?.filter(log => new Date(log.createdAt).toLocaleDateString() === today)
-    ?.reduce((sum, log) => sum + log.calories, 0) ?? 0;
+  const todaysFoodLogs = Object.values(groupedLogs)
+    .flatMap(meal => meal.logs)
+    .filter(log => new Date(log.createdAt).toLocaleDateString() === today);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -61,14 +60,14 @@ export default async function HomePage() {
           <CardHeader>
             <CardTitle>Today's Progress</CardTitle>
           </CardHeader>
-          <NutritionalChart foodLogs={logs} />
+          <NutritionalChart foodLogs={todaysFoodLogs} dailyCalorieGoal={user.dailyCalorieGoal} />
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Recent Meals</CardTitle>
           </CardHeader>
-          {/* <FoodLog foodLogs={logs} /> */}
+          <FoodLog foodLogs={groupedLogs} />
         </Card>
       </div>
     </div>

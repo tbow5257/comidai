@@ -1,47 +1,30 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { type SelectFoodLog } from "@/lib/db/schema";
 
-type FoodLogWithMeal = {
-  id: number;
-  name: string;
-  calories: number;
-  protein: number;
-  portionSize: number;
-  portionUnit: string;
-  createdAt: Date;
-  meal: {
-    id: number;
-    name: string;
-    createdAt: Date;
-  }
-}
-
-type GroupedLogs = {
-  [mealId: string]: {
+export type GroupedLogs = {
+  [mealId: number]: { // Changed from string to number to match schema
     mealName: string;
     createdAt: Date;
-    logs: FoodLogWithMeal[];
+    logs: (SelectFoodLog & {
+      meal: {
+        id: number;
+        name: string;
+        createdAt: Date;
+      }
+    })[];
   }
 }
 
-export function FoodLog({ foodLogs }: { foodLogs: FoodLogWithMeal[] }) {
-  // Group logs by meal
-  const groupedLogs = foodLogs.reduce<GroupedLogs>((acc, log) => {
-    if (!acc[log.meal.id]) {
-      acc[log.meal.id] = {
-        mealName: log.meal.name,
-        createdAt: log.meal.createdAt,
-        logs: []
-      };
-    }
-    acc[log.meal.id].logs.push(log);
-    return acc;
-  }, {});
+interface FoodLogProps {
+  foodLogs: GroupedLogs
+}
 
+export function FoodLog({ foodLogs }: FoodLogProps) {
   return (
     <ScrollArea className="h-[400px] pr-4">
       <div className="space-y-8">
-        {Object.entries(groupedLogs).map(([mealId, meal]) => (
+        {Object.entries(foodLogs).map(([mealId, meal]) => (
           <div key={mealId} className="space-y-2">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold">{meal.mealName}</h3>

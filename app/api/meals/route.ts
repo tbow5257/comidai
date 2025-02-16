@@ -13,7 +13,8 @@ export const createMealPayloadSchema = z.object({
       mealId: true,
       createdAt: true 
     })
-  ).optional()
+  ).optional(),
+  mealSummary: z.string().optional()
 });
 
 export async function POST(req: Request) {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { userId, name, foodLogs: foodLogsData = [] } = parsed.data;
+    const { userId, name, foodLogs: foodLogsData = [], mealSummary } = parsed.data;
 
     const result = await db.transaction(async (tx) => {
       // 1. Create the meal
@@ -35,7 +36,8 @@ export async function POST(req: Request) {
         .insert(meals)
         .values({
           userId,
-          name
+          name,
+          mealSummary
         })
         .returning();
 

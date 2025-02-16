@@ -36,6 +36,7 @@ export const meals = pgTable("meals", {
   userId: integer("user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   name: text("name").notNull(),
+  mealSummary: text("meal_summary"),
 });
 
 export const mealRelations = relations(meals, ({ one, many }) => ({

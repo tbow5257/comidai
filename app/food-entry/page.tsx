@@ -15,6 +15,7 @@ export default function FoodEntry() {
   const { toast } = useToast();
   const router = useRouter();
   const [foods, setFoods] = useState<FoodProfile[]>([]);
+  const [mealSummary, setMealSummary] = useState<string>("");
   const [imageData, setImageData] = useState<string | null>(null);
 
   const analysisMutation = useMutation({
@@ -29,6 +30,7 @@ export default function FoodEntry() {
     onSuccess: (data) => {
       setFoods(data.foods);
       setImageData(data.image);
+      setMealSummary(data.meal_summary);
     },
     onError: (error: Error) => {
       toast({
@@ -44,13 +46,14 @@ export default function FoodEntry() {
       const payload = {
         userId: 1, // TODO: Get from auth context
         name: `Meal ${new Date().toLocaleTimeString()}`,
+        mealSummary,
         foodLogs: foods.map(food => ({
           name: food.name,
           calories: food.calories,
           protein: food.protein.toString(),
           portionSize: food.estimated_portion.count.toString(),
           portionUnit: food.estimated_portion.unit
-        }))
+        })),
       };
       
       return await apiRequest("POST", "/api/meals", payload);
@@ -98,7 +101,13 @@ export default function FoodEntry() {
               </div>
             </div>
           )}
-
+          {mealSummary && (
+            <div className="mb-6">
+              <p className="text-sm font-medium text-center">
+                Meal Summary: {mealSummary}
+              </p>
+            </div>
+          )}
           {foods.length > 0 && (
             <>
               {foods.map((food, i) => (
