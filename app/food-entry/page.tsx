@@ -1,16 +1,16 @@
 'use client'
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Image from 'next/image'
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { CameraUpload } from "@/components/camera-upload";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import Image from 'next/image'
-import type { FoodProfile } from "app/food-entry/openai";
+import type { FoodProfile } from "./analyze-food";
 import { useRouter } from "next/navigation";
 import FoodEntryItem from "./food-entry-item";
-import { analyzeFoodImage } from "./actions";
+import { analyzeFoodImage } from "./analyze-food";
+import { createMeal } from "./submit-log-meal";
 
 export default function FoodEntry() {
   const { toast } = useToast();
@@ -19,6 +19,7 @@ export default function FoodEntry() {
   const [mealSummary, setMealSummary] = useState<string>("");
   const [imageData, setImageData] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const analyzeFood = async (formData: FormData) => {
     try {
@@ -38,37 +39,41 @@ export default function FoodEntry() {
     }
   };
 
-  const submitMutation = useMutation({
-    mutationFn: async (foods: FoodProfile[]) => {
-      const payload = {
-        userId: 1,
-        name: `Meal ${new Date().toLocaleTimeString()}`,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        clientTimestamp: new Date().toISOString(),
-        mealSummary,
-        foodLogs: foods.map(food => ({
-          name: food.name,
-          calories: food.calories,
-          protein: food.protein.toString(),
-          portionSize: food.estimated_portion.count.toString(),
-          portionUnit: food.estimated_portion.unit
-        })),
-      };
-      
-      return await apiRequest("POST", "/api/meals", payload);
-    },
-    onSuccess: () => {
-      toast({ title: "Meal logged successfully!" });
-      router.push('/');
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to log meal",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
+  const handleSubmit = async (foods: FoodProfile[]) => {
+    startTransition(async () => {
+      try {
+        const payload = {
+          userId: 1,
+          name: `Meal ${new Date().toLocaleTimeString()}`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          clientTimestamp: new Date().toISOString(),
+          mealSummary,
+          foodLogs: foods.map(food => ({
+            name: food.name,
+            calories: food.calories,
+            protein: food.protein.toString(),
+            portionSize: food.estimated_portion.count.toString(),
+            portionUnit: food.estimated_portion.unit
+          })),
+        };
+        
+        const result = await createMeal(payload);
+        
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        
+        toast({ title: "Meal logged successfully!" });
+        router.push('/');
+      } catch (error) {
+        toast({
+          title: "Failed to log meal",
+          description: error instanceof Error ? error.message : 'Failed to save meal',
+          variant: "destructive"
+        });
+      }
+    });
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -145,10 +150,10 @@ export default function FoodEntry() {
                     Start Over
                   </Button>
                   <Button
-                    onClick={() => submitMutation.mutate(foods)}
-                    disabled={foods.length === 0 || submitMutation.isPending}
+                    onClick={() => handleSubmit(foods)}
+                    disabled={foods.length === 0 || isPending}
                   >
-                    {submitMutation.isPending ? "Saving..." : "Log Meal"}
+                    {isPending ? "Saving..." : "Log Meal"}
                   </Button>
                 </div>
               </div>
