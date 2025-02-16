@@ -3,9 +3,11 @@ import { Progress } from "@/components/ui/progress";
 import type { SelectFoodLog } from "@/lib/db/schema";
 
 export function NutritionalChart({foodLogs, dailyCalorieGoal }: { dailyCalorieGoal?: number | null, foodLogs: SelectFoodLog[] }) {
-  const today = new Date().toLocaleDateString();
+  // set fixed date for testing
+  const FIXED_DATE = new Date('2025-02-16T00:00:00Z'); // Use ISO format with UTC
+  const today = FIXED_DATE.getTime();
   const todaysLogs = foodLogs.filter(
-    log => new Date(log.createdAt).toLocaleDateString() === today
+    log => new Date(log.createdAt).setHours(0, 0, 0, 0) === today
   );
 
   const calories = todaysLogs.reduce((sum, log) => sum + log.calories, 0);

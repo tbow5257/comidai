@@ -4,6 +4,7 @@ import { compare } from "bcrypt";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { cookies } from 'next/headers'
 
 export async function POST(req: Request) {
   try {
@@ -41,14 +42,14 @@ export async function POST(req: Request) {
       },
       { status: 200 }
     );
+    const cookieStore = await cookies()
 
-    // Set HTTP-only cookie that expires when browser closes
-    response.cookies.set('auth-token', user.id.toString(), {
+    cookieStore.set('auth-token', user.id.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      path: '/'
-    });
+      path: '/',
+    })
 
     return response;
   } catch (error) {

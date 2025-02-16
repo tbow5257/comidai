@@ -1,19 +1,21 @@
-// app/page.tsx
 import { redirect } from "next/navigation";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { foodLogs, meals } from "@/lib/db/schema";
+import { meals } from "@/lib/db/schema";
 import { AddFoodButton } from "@/components/add-food-button"; // We'll create this
 import { FoodLog } from "@/components/food-log";
 import { NutritionalChart } from "@/components/nutritional-chart";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuthUser } from "./lib/auth";
 import { GroupedLogs } from "@/components/food-log";
+import { ClientToast } from "./components/client-toast";
+import { getCookie } from "./actions";
 
 export default async function HomePage() {
   const user = await getAuthUser()
-
+  const flashMessage = await getCookie('flash-message')
+  
   if (!user) {
     redirect("/auth");
   }
@@ -43,15 +45,20 @@ export default async function HomePage() {
     return acc;
   }, {});
 
-  const today = new Date().toLocaleDateString();
-  const todaysFoodLogs = Object.values(groupedLogs)
-    .flatMap(meal => meal.logs)
-    .filter(log => new Date(log.createdAt).toLocaleDateString() === today);
+  // const today = new Date().setHours(0, 0, 0, 0);
+  // const todaysFoodLogs = Object.values(groupedLogs)
+  //   .flatMap(meal => meal.logs)
+  //   .filter(log => {
+  //     const logDate = new Date(log.createdAt);
+  //     return logDate.setHours(0, 0, 0, 0) === today
+  //   });
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Calorie Tracker</h1>
+    <>
+      {flashMessage && <ClientToast message={flashMessage} />}
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Calorie Tracker</h1>
         <AddFoodButton />
       </div>
 
@@ -60,7 +67,7 @@ export default async function HomePage() {
           <CardHeader>
             <CardTitle>Today's Progress</CardTitle>
           </CardHeader>
-          <NutritionalChart foodLogs={todaysFoodLogs} dailyCalorieGoal={user.dailyCalorieGoal} />
+          <NutritionalChart foodLogs={[]} dailyCalorieGoal={user.dailyCalorieGoal} />
         </Card>
 
         <Card>
@@ -71,5 +78,6 @@ export default async function HomePage() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

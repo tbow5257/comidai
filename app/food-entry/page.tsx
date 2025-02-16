@@ -44,7 +44,7 @@ export default function FoodEntry() {
   const submitMutation = useMutation({
     mutationFn: async (foods: FoodProfile[]) => {
       const payload = {
-        userId: 1, // TODO: Get from auth context
+        userId: 1,
         name: `Meal ${new Date().toLocaleTimeString()}`,
         mealSummary,
         foodLogs: foods.map(food => ({

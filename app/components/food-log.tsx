@@ -1,5 +1,6 @@
+'use client'
+
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
 import { type SelectFoodLog } from "@/lib/db/schema";
 
 export type GroupedLogs = {
@@ -29,7 +30,7 @@ export function FoodLog({ foodLogs }: FoodLogProps) {
             <div className="flex justify-between items-center">
               <h3 className="font-semibold">{meal.mealName}</h3>
               <span className="text-sm text-muted-foreground">
-                {format(new Date(meal.createdAt), "MMM d, h:mm a")}
+                {new Date(meal.createdAt).toLocaleString()}
               </span>
             </div>
             <div className="space-y-2">
