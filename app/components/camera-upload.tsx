@@ -6,7 +6,7 @@ import { Camera, Upload, Loader2 } from "lucide-react";
 import { toast, useToast } from "@/hooks/use-toast";
 
 interface Props {
-  onCapture: (formData: FormData) => void;
+  onCapture: (formData: FormData, previewUrl: string) => void;
   analyzing: boolean;
 }
 
@@ -63,11 +63,13 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
       canvas.height = video.videoHeight;
       canvas.getContext("2d")?.drawImage(video, 0, 0);
       
+      const previewUrl = canvas.toDataURL('image/jpeg');
+      
       canvas.toBlob(async (blob) => {
         if (blob) {
           const formData = new FormData();
           formData.append("image", blob);
-          await onCapture(formData);
+          await onCapture(formData, previewUrl);
           stopCamera();
         }
       }, "image/jpeg");
@@ -80,10 +82,8 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
       const formData = new FormData();
       formData.append("image", file);
 
-      for (const [key, value] of formData.entries()) {
-        console.log(`FormData Entry - ${key}:`, value);
-      }
-      await onCapture(formData);
+      const previewUrl = URL.createObjectURL(file);
+      await onCapture(formData, previewUrl);
     }
   }
 

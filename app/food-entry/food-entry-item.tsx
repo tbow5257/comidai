@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const GRAMS_PER_OUNCE = 28.3495;
 
 export type EstimatedPortion = {
     count: number;
@@ -39,11 +41,35 @@ export type EstimatedPortion = {
 
 const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove }) => {
   // Store base values for proportional calculations
-  const [baseValues, setBaseValues] = useState({
+
+  const [baseValues] = useState({
     calories: food.calories,
     protein: food.protein,
     portion: food.estimated_portion.count
   });
+
+  const handleUnitChange = (newUnit: 'g' | 'oz') => {
+    const currentCount = food.estimated_portion.count;
+    const currentUnit = food.estimated_portion.unit;
+    
+    let newCount: number;
+    if (currentUnit === 'g' && newUnit === 'oz') {
+      newCount = currentCount / GRAMS_PER_OUNCE;
+    } else if (currentUnit === 'oz' && newUnit === 'g') {
+      newCount = currentCount * GRAMS_PER_OUNCE;
+    } else {
+      newCount = currentCount;
+    }
+
+    // Round to 1 decimal place
+    newCount = Math.round(newCount * 10) / 10;
+
+    onUpdate({
+      ...food,
+      estimated_portion: { count: newCount, unit: newUnit },
+    });
+    
+  }
 
   // Calculate ratio for any numeric change
   const updateProportionally = (
@@ -71,6 +97,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     onUpdate(updatedFood);
   };
 
+
   return (
     <div className="space-y-4 p-4 border rounded">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,10 +122,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
             value={food.estimated_portion.unit}
             onValueChange={(value) => {
               if (value === "g" || value === "oz") {
-                onUpdate({
-                  ...food,
-                  estimated_portion: { ...food.estimated_portion, unit: value },
-                });
+                handleUnitChange(value);
               } else {
                 console.error(`Invalid unit: ${value}`);
               }
@@ -114,42 +138,44 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
           </Select>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Input
-            type="number"
-            value={Math.round(food.calories)}
-            min={0}
-            step={1}
-            onChange={(e) => updateProportionally(Number(e.target.value), 'calories')}
-            className="w-24"
-          />
-          <span>calories</span>
-          
-          <Input
-            type="number"
-            value={Math.round(food.protein * 10) / 10}
-            min={0}
-            step="0.1"
-            onChange={(e) => {
-              const value = Number(e.target.value);
-              if (!isNaN(value)) {
-                updateProportionally(Math.round(value * 10) / 10, 'protein');
-              }
-            }}
-            className="w-24"
-          />
-          <span>protein (g)</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Input
+              type="number"
+              value={Math.round(food.calories)}
+              min={0}
+              step={1}
+              onChange={(e) => updateProportionally(Number(e.target.value), 'calories')}
+              className="w-24"
+            />
+            <span>calories</span>
+            
+            <Input
+              type="number"
+              value={Math.round(food.protein * 10) / 10}
+              min={0}
+              step="0.1"
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (!isNaN(value)) {
+                  updateProportionally(Math.round(value * 10) / 10, 'protein');
+                }
+              }}
+              className="w-24"
+            />
+            <span>protein (g)</span>
+          </div>
+          <Button variant="destructive" onClick={onRemove}>
+            Remove
+          </Button>
         </div>
       </div>
 
       <div className="text-sm text-gray-600">
-        <p>Typical portion: {food.size_description}</p>
-        <p>Serving size: {food.typical_serving}</p>
+        <p>Typical portion: {food.size_description} - about {food.typical_serving}</p>
       </div>
 
-      <Button variant="destructive" onClick={onRemove}>
-        Remove
-      </Button>
+
     </div>
   );
 };

@@ -37,9 +37,11 @@ async function generateMealInfo(base64Image: string): Promise<Meal> {
             text: `
                   Analyze this food image and identify each food item.
                   For each item, provide:
-                  - Estimated portion size (in grams or ounces)
-                  - Size description using common household items (e.g., palm sized, golf ball)
-                  - Typical serving metrics with calories and protein (in grams)
+                  - Estimated portion size in photo (in grams or ounces), and the calories and protein per portion
+                  
+                  - Size description using common household items (e.g., palm sized, golf ball), with estimatei
+                  - Of that size description, the metrics of calories and protein associated with that size description (in grams)
+                  
                   For the whole meal:
                   - A concise 150-char max summary that creatively describes the meal, capturing key details
                   Respond with JSON in the following format:

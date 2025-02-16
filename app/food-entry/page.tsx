@@ -20,14 +20,20 @@ export default function FoodEntry() {
   const [imageData, setImageData] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [originalFoods, setOriginalFoods] = useState<FoodProfile[]>([]);
 
-  const analyzeFood = async (formData: FormData) => {
+  const analyzeFood = async (formData: FormData, previewUrl: string) => {
     try {
       setIsAnalyzing(true);
+      setImageData(previewUrl);
+      
       const data = await analyzeFoodImage(formData);
-      setFoods(data.foods);
-      setImageData(data.image);
+      setFoods(structuredClone(data.foods));
+      if (data.image !== previewUrl) {
+        setImageData(data.image);
+      }
       setMealSummary(data.meal_summary);
+      setOriginalFoods(data.foods);
     } catch (error) {
       toast({
         title: "Analysis failed",
@@ -117,12 +123,12 @@ export default function FoodEntry() {
                   key={i}
                   food={food}
                   onUpdate={(updatedFood) => {
-                    const newFoods = [...foods];
+                    const newFoods = structuredClone(foods);
                     newFoods[i] = updatedFood;
                     setFoods(newFoods);
                   }}
                   onRemove={() => {
-                    const newFoods = [...foods];
+                    const newFoods = structuredClone(foods);
                     newFoods.splice(i, 1);
                     setFoods(newFoods);
                   }}
@@ -145,10 +151,19 @@ export default function FoodEntry() {
                     onClick={() => {
                       setFoods([]);
                       setImageData(null);
+                      setMealSummary("");
                     }}
                   >
                     Start Over
                   </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setFoods(structuredClone(originalFoods))}
+                    disabled={foods.length === 0}
+                  >
+                    Reset to Original
+                  </Button>
+
                   <Button
                     onClick={() => handleSubmit(foods)}
                     disabled={foods.length === 0 || isPending}
