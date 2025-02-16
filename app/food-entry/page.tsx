@@ -1,13 +1,13 @@
 'use client'
 import { useState, useTransition } from "react";
 import Image from 'next/image'
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { CameraUpload } from "@/components/camera-upload";
 import type { FoodProfile } from "./analyze-food";
-import { useRouter } from "next/navigation";
 import FoodEntryItem from "./food-entry-item";
 import { analyzeFoodImage } from "./analyze-food";
 import { createMeal } from "./submit-log-meal";
