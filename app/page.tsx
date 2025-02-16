@@ -33,25 +33,28 @@ export default async function HomePage() {
     acc[meal.id] = {
       mealName: meal.name,
       createdAt: meal.createdAt,
+      timeZone: meal.timeZone,
       logs: meal.foodLogs.map(log => ({
         ...log,
         meal: {
           id: meal.id,
           name: meal.name,
-          createdAt: meal.createdAt
         }
       }))
     };
     return acc;
   }, {});
 
-  // const today = new Date().setHours(0, 0, 0, 0);
-  // const todaysFoodLogs = Object.values(groupedLogs)
-  //   .flatMap(meal => meal.logs)
-  //   .filter(log => {
-  //     const logDate = new Date(log.createdAt);
-  //     return logDate.setHours(0, 0, 0, 0) === today
-  //   });
+  const today = new Date().setHours(0, 0, 0, 0);
+  console.log({today})
+  const todaysFoodLogs = Object.values(groupedLogs)
+  .filter(meal => {
+    const mealDate = new Date(meal.createdAt);
+    mealDate.setHours(0, 0, 0, 0);
+    console.log('mealDate.getTime() ', mealDate.getTime())
+    return mealDate.getTime() === today;
+  })
+  .flatMap(meal => meal.logs);
 
   return (
     <>

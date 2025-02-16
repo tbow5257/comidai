@@ -1,7 +1,13 @@
-import { pgTable, text, serial, integer, timestamp, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, decimal, customType } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
+
+const timezoneType = customType<{ data: string }>({
+  dataType() {
+    return 'timezone';
+  },
+});
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -34,9 +40,10 @@ export const foodLogs = pgTable("food_logs", {
 export const meals = pgTable("meals", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { mode: 'date' }).notNull(),
   name: text("name").notNull(),
   mealSummary: text("meal_summary"),
+  timeZone: timezoneType("time_zone").notNull()
 });
 
 export const mealRelations = relations(meals, ({ one, many }) => ({

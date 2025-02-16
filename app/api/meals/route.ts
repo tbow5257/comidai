@@ -5,16 +5,40 @@ import { z } from "zod";
 
 export type FoodLogPayload = z.infer<typeof insertFoodLogSchema>;
 
+// export const createMealPayloadSchema = z.object({
+//   userId: z.number(),
+//   name: z.string().min(1),
+//   foodLogs: z.array(
+//     insertFoodLogSchema.omit({ 
+//       mealId: true,
+//       createdAt: true 
+//     })
+//   ).optional(),
+//   mealSummary: z.string().optional()
+// });
+
+
 export const createMealPayloadSchema = z.object({
   userId: z.number(),
   name: z.string().min(1),
+  timeZone: z.string()
+    .refine((tz) => {
+      try {
+        // Use Intl API to validate timezone
+        Intl.DateTimeFormat(undefined, { timeZone: tz });
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }, "Invalid timezone"),
+  clientTimestamp: z.string().datetime(), // Validates ISO 8601
+  mealSummary: z.string().optional(),
   foodLogs: z.array(
     insertFoodLogSchema.omit({ 
       mealId: true,
       createdAt: true 
     })
   ).optional(),
-  mealSummary: z.string().optional()
 });
 
 export async function POST(req: Request) {
@@ -28,7 +52,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { userId, name, foodLogs: foodLogsData = [], mealSummary } = parsed.data;
+    const { userId, name, foodLogs: foodLogsData = [], mealSummary, timeZone, clientTimestamp } = parsed.data;
 
     const result = await db.transaction(async (tx) => {
       // 1. Create the meal
@@ -37,7 +61,9 @@ export async function POST(req: Request) {
         .values({
           userId,
           name,
-          mealSummary
+          mealSummary,
+          timeZone,
+          createdAt: new Date(clientTimestamp)
         })
         .returning();
 

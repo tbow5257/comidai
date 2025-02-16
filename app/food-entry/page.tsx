@@ -46,6 +46,8 @@ export default function FoodEntry() {
       const payload = {
         userId: 1,
         name: `Meal ${new Date().toLocaleTimeString()}`,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        clientTimestamp: new Date().toISOString(),
         mealSummary,
         foodLogs: foods.map(food => ({
           name: food.name,

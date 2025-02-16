@@ -1,17 +1,16 @@
-'use client'
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type SelectFoodLog } from "@/lib/db/schema";
+import { TimeDisplay } from "./time-display";
 
 export type GroupedLogs = {
-  [mealId: number]: { // Changed from string to number to match schema
+  [mealId: number]: {
     mealName: string;
     createdAt: Date;
+    timeZone: string;
     logs: (SelectFoodLog & {
       meal: {
         id: number;
         name: string;
-        createdAt: Date;
       }
     })[];
   }
@@ -30,7 +29,7 @@ export function FoodLog({ foodLogs }: FoodLogProps) {
             <div className="flex justify-between items-center">
               <h3 className="font-semibold">{meal.mealName}</h3>
               <span className="text-sm text-muted-foreground">
-                {new Date(meal.createdAt).toLocaleString()}
+                <TimeDisplay utcTimestamp={meal.createdAt} createdTimeZone={meal.timeZone} />
               </span>
             </div>
             <div className="space-y-2">
