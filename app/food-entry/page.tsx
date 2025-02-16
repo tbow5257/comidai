@@ -7,9 +7,10 @@ import { CameraUpload } from "@/components/camera-upload";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Image from 'next/image'
-import type { FoodProfile } from "@/lib/openai";
+import type { FoodProfile } from "app/food-entry/openai";
 import { useRouter } from "next/navigation";
 import FoodEntryItem from "./food-entry-item";
+import { analyzeFoodImage } from "./actions";
 
 export default function FoodEntry() {
   const { toast } = useToast();
@@ -17,29 +18,25 @@ export default function FoodEntry() {
   const [foods, setFoods] = useState<FoodProfile[]>([]);
   const [mealSummary, setMealSummary] = useState<string>("");
   const [imageData, setImageData] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const analysisMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const res = await apiRequest("POST", "/api/food-analysis", formData);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Analysis failed');
-      }
-      return res.json();
-    },
-    onSuccess: (data) => {
+  const analyzeFood = async (formData: FormData) => {
+    try {
+      setIsAnalyzing(true);
+      const data = await analyzeFoodImage(formData);
       setFoods(data.foods);
       setImageData(data.image);
       setMealSummary(data.meal_summary);
-    },
-    onError: (error: Error) => {
+    } catch (error) {
       toast({
         title: "Analysis failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Analysis failed',
         variant: "destructive",
       });
+    } finally {
+      setIsAnalyzing(false);
     }
-  });
+  };
 
   const submitMutation = useMutation({
     mutationFn: async (foods: FoodProfile[]) => {
@@ -82,10 +79,8 @@ export default function FoodEntry() {
         <CardContent>
           {!foods.length && (
             <CameraUpload 
-            onCapture={(formData) => {
-              analysisMutation.mutate(formData);
-            }}
-            analyzing={analysisMutation.isPending}
+            onCapture={analyzeFood}
+            analyzing={isAnalyzing}
             />
           )}
 

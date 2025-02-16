@@ -75,6 +75,14 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     <div className="space-y-4 p-4 border rounded">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex items-center space-x-2">
+          <p>Name</p>
+          <Input
+            type="text"
+            value={food.name}
+            onChange={(e) => onUpdate({ ...food, name: e.target.value })}
+            className="w-24"
+          />
+          <p>Portion</p>
           <Input
             type="number"
             step="0.1"
