@@ -1,4 +1,5 @@
 'use client'
+import imageCompression from 'browser-image-compression';
 
 import { useState, useRef, use } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,23 @@ import { toast, useToast } from "@/hooks/use-toast";
 interface Props {
   onCapture: (formData: FormData, previewUrl: string) => void;
   analyzing: boolean;
+}
+
+
+const formatSize = (bytes: number) => {
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(2)}MB`;
+};
+
+const compressImage = async (file: File | Blob) => {
+  const options = {
+    maxSizeMB: 2,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+    fileType: 'image/jpeg'
+  };
+  
+  return await imageCompression(file as File, options);
 }
 
 export function CameraUpload({ onCapture, analyzing }: Props) {
@@ -67,8 +85,9 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
       
       canvas.toBlob(async (blob) => {
         if (blob) {
+          const compressedBlob = await compressImage(blob);
           const formData = new FormData();
-          formData.append("image", blob);
+          formData.append("image", compressedBlob);
           await onCapture(formData, previewUrl);
           stopCamera();
         }
@@ -79,9 +98,10 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
+      const compressedFile = await compressImage(file);
       const formData = new FormData();
-      formData.append("image", file);
-
+      formData.append("image", compressedFile);
+      console.log(`Compressed image size: ${formatSize(compressedFile.size)}`);
       const previewUrl = URL.createObjectURL(file);
       await onCapture(formData, previewUrl);
     }
