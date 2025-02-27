@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { CameraUpload } from "@/components/camera-upload";
+import { useIsMobile } from "@/hooks/use-mobile"
 import type { FoodProfile } from "./analyze-food";
 import FoodEntryItem from "./food-entry-item";
 import { analyzeFoodImage } from "./analyze-food";
@@ -21,6 +22,7 @@ export default function FoodEntry() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [originalFoods, setOriginalFoods] = useState<FoodProfile[]>([]);
+  const isMobile = useIsMobile();
 
   const analyzeFood = async (formData: FormData, previewUrl: string) => {
     try {
@@ -135,43 +137,81 @@ export default function FoodEntry() {
                 />
               ))}
 
-              <div className="flex justify-between mt-4">
-                <div>
-                  <p className="text-sm font-medium">
-                    Total Calories: {foods.reduce((sum, food) => sum + (food.calories || 0), 0)}
-                  </p>
-                  <p className="text-sm font-medium">
-                    Total Protein: {foods.reduce((sum, food) => sum + (food.protein || 0), 0)}g
-                  </p>
-                </div>
+              {isMobile ? (
+                <div className="flex flex-col gap-4 mt-4">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-medium">
+                      Total Calories: {foods.reduce((sum, food) => sum + (food.calories || 0), 0)}
+                    </p>
+                    <p className="text-sm font-medium">
+                      Total Protein: {foods.reduce((sum, food) => sum + (food.protein || 0), 0)}g
+                    </p>
+                  </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setFoods([]);
-                      setImageData(null);
-                      setMealSummary("");
-                    }}
-                  >
-                    Start Over
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setFoods(structuredClone(originalFoods))}
-                    disabled={foods.length === 0}
-                  >
-                    Reset to Original
-                  </Button>
-
-                  <Button
-                    onClick={() => handleSubmit(foods)}
-                    disabled={foods.length === 0 || isPending}
-                  >
-                    {isPending ? "Saving..." : "Log Meal"}
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setFoods([]);
+                        setImageData(null);
+                        setMealSummary("");
+                      }}
+                    >
+                      Start Over
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setFoods(structuredClone(originalFoods))}
+                      disabled={foods.length === 0}
+                    >
+                      Reset to Original
+                    </Button>
+                    <Button
+                      onClick={() => handleSubmit(foods)}
+                      disabled={foods.length === 0 || isPending}
+                    >
+                      {isPending ? "Saving..." : "Log Meal"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex justify-between mt-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Total Calories: {foods.reduce((sum, food) => sum + (food.calories || 0), 0)}
+                    </p>
+                    <p className="text-sm font-medium">
+                      Total Protein: {foods.reduce((sum, food) => sum + (food.protein || 0), 0)}g
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setFoods([]);
+                        setImageData(null);
+                        setMealSummary("");
+                      }}
+                    >
+                      Start Over
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setFoods(structuredClone(originalFoods))}
+                      disabled={foods.length === 0}
+                    >
+                      Reset to Original
+                    </Button>
+                    <Button
+                      onClick={() => handleSubmit(foods)}
+                      disabled={foods.length === 0 || isPending}
+                    >
+                      {isPending ? "Saving..." : "Log Meal"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </CardContent>

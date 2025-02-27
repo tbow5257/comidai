@@ -3,26 +3,10 @@
 import OpenAI from "openai";
 
 import { logWithTime } from "@/lib/utils";
+import { Meal } from "app/types/analysis-types";
+
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-export interface FoodProfile {
-  name: string;
-  estimated_portion: {
-    count: number;
-    unit: 'g' | 'oz';
-  };
-  size_description: string;
-  typical_serving: string;
-  calories: number;
-  protein: number;
-}
-
-export interface Meal {
-  foods: FoodProfile[];
-  meal_summary: string;
-}
-
 
 async function generateMealInfo(base64Image: string): Promise<Meal> {
   logWithTime("Starting food image analysis");
