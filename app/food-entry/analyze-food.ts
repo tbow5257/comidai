@@ -1,14 +1,18 @@
 'use server'
 
 import OpenAI from "openai";
-
+import { fromZodError } from "zod-validation-error";
+import { z } from "zod";
 import { logWithTime } from "@/lib/utils";
-import { Meal } from "app/types/analysis-types";
-
+import { Meal, MealSchema, FoodCategoryEnum, FoodUnitEnum } from "app/types/analysis-types";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function generateMealInfo(base64Image: string): Promise<Meal> {
+  // Get food categories as string for the prompt
+  const foodCategories = FoodCategoryEnum.options.map(cat => `"${cat}"`).join(" | ");
+  const foodUnits = FoodUnitEnum.options.map(unit => `"${unit}"`).join(" | ");
+
   logWithTime("Starting food image analysis");
   const visionResponse = await openai.chat.completions.create({
     model: "gpt-4o-mini",
@@ -27,7 +31,8 @@ async function generateMealInfo(base64Image: string): Promise<Meal> {
                   - Of that size description, the metrics of calories and protein associated with that size description (in grams)
                   
                   For the whole meal:
-                  - A concise 150-char max summary that creatively describes the meal, capturing key details
+                  - meal_summary: A concise 150-char max summary that creatively describes the meal, capturing key details
+                  - meal_categories: Categorize each food item into basic food types: ${FoodCategoryEnum.options.join(", ")}
                   Respond with JSON in the following format:
                   {
                     foods: [
@@ -35,7 +40,7 @@ async function generateMealInfo(base64Image: string): Promise<Meal> {
                         name: string,
                         estimated_portion: {
                           count: number,
-                          unit: 'g' | 'oz'
+                          unit: ${foodUnits}
                         },
                         size_description: string,
                         typical_serving: string,
@@ -43,7 +48,8 @@ async function generateMealInfo(base64Image: string): Promise<Meal> {
                         protein: number
                       }
                     ],
-                    meal_summary: string
+                    meal_summary: string,
+                    meal_categories: [${foodCategories}]
                   }
                 `,
           },
@@ -65,8 +71,26 @@ async function generateMealInfo(base64Image: string): Promise<Meal> {
     logWithTime("No response from vision model");
     throw new Error("No response from vision model");
   }
-  logWithTime("Food image analysis complete");
-  return JSON.parse(content);
+
+  try {
+    const parsedContent = JSON.parse(content);
+    const validatedMeal = MealSchema.parse(parsedContent);
+    logWithTime("Food image analysis complete");
+    return validatedMeal;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      logWithTime("Validation error in OpenAI response", {
+        error: validationError.message
+      });
+      throw new Error(`Invalid response format: ${validationError.message}`);
+    }
+    if (error instanceof SyntaxError) {
+      logWithTime("JSON parsing error in OpenAI response");
+      throw new Error("Invalid JSON in OpenAI response");
+    }
+    throw error;
+  }
 }
 
 
@@ -84,11 +108,12 @@ export async function analyzeFoodImage(formData: FormData) {
     logWithTime("Base64 image created", { length: base64Image.length });
 
     logWithTime("Starting OpenAI analysis");
-    const { meal_summary, foods } = await generateMealInfo(base64Image);
+    const { meal_summary, foods, meal_categories } = await generateMealInfo(base64Image);
     logWithTime("OpenAI analysis complete, foods:", foods);
 
     return { 
       meal_summary,
+      meal_categories,
       foods,
       image: `data:image/jpeg;base64,${base64Image}`
     };

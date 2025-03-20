@@ -2,13 +2,14 @@
 import { useState, useTransition } from "react";
 import Image from 'next/image'
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { CameraUpload } from "@/components/camera-upload";
 import { useIsMobile } from "@/hooks/use-mobile"
-import type { FoodProfile } from "./analyze-food";
+import type { FoodCategory, FoodProfile } from "../types/analysis-types";
 import FoodEntryItem from "./food-entry-item";
 import { analyzeFoodImage } from "./analyze-food";
 import { createMeal } from "./submit-log-meal";
@@ -18,6 +19,7 @@ export default function FoodEntry() {
   const router = useRouter();
   const [foods, setFoods] = useState<FoodProfile[]>([]);
   const [mealSummary, setMealSummary] = useState<string>("");
+  const [mealCategories, setMealCategories] = useState<FoodCategory[]>([]);
   const [imageData, setImageData] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -35,6 +37,7 @@ export default function FoodEntry() {
         setImageData(data.image);
       }
       setMealSummary(data.meal_summary);
+      setMealCategories(data.meal_categories);
       setOriginalFoods(data.foods);
     } catch (error) {
       toast({
@@ -56,6 +59,7 @@ export default function FoodEntry() {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           clientTimestamp: new Date().toISOString(),
           mealSummary,
+          mealCategories,
           foodLogs: foods.map(food => ({
             name: food.name,
             calories: food.calories,
@@ -74,6 +78,7 @@ export default function FoodEntry() {
         toast({ title: "Meal logged successfully!" });
         router.push('/');
       } catch (error) {
+        console.error(error);
         toast({
           title: "Failed to log meal",
           description: error instanceof Error ? error.message : 'Failed to save meal',
@@ -92,9 +97,16 @@ export default function FoodEntry() {
         <CardContent>
           {!foods.length && (
             <CameraUpload 
-            onCapture={analyzeFood}
-            analyzing={isAnalyzing}
+              onCapture={analyzeFood}
+              analyzing={isAnalyzing}
             />
+          )}
+
+          {isAnalyzing && (
+            <div className="flex flex-col items-center justify-center gap-2 my-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Analyzing your food...</p>
+            </div>
           )}
 
           {imageData && (

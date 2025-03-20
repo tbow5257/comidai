@@ -133,12 +133,17 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
         </div>
       ) : (
         <div className="flex justify-center gap-4">
-          <Button onClick={startCamera}>
+          <Button onClick={startCamera} disabled={analyzing}>
             <Camera className="mr-2 h-4 w-4" />
             Take Photo
           </Button>
-          <Button variant="outline" asChild>
-            <label>
+          <Button 
+            variant="outline" 
+            asChild 
+            className={analyzing ? "opacity-50 cursor-not-allowed" : ""}
+            disabled={analyzing}
+          >
+            <label className={analyzing ? "cursor-not-allowed" : ""}>
               <Upload className="mr-2 h-4 w-4" />
               Upload Photo
               <input
@@ -146,6 +151,7 @@ export function CameraUpload({ onCapture, analyzing }: Props) {
                 accept="image/*"
                 className="hidden"
                 onChange={handleFileUpload}
+                disabled={analyzing}
               />
             </label>
           </Button>

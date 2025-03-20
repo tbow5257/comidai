@@ -3,9 +3,9 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
-import { meals, foodLogs, insertFoodLogSchema } from "@/lib/db/schema";
+import { meals, foodLogs, mealCategories, insertFoodLogSchema, insertMealCategorySchema, InsertFoodLog, InsertMealCategory } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
-import { FoodLogPayload } from "app/api/meals/route";
+import { FoodCategory, FoodCategoryEnum } from "app/types/analysis-types";
 
 const createMealPayloadSchema = z.object({
     userId: z.number(),
@@ -28,6 +28,7 @@ const createMealPayloadSchema = z.object({
         createdAt: true 
       })
     ).optional(),
+    mealCategories: z.array(FoodCategoryEnum).optional(),
 });
   
 export async function createMeal(input: FormData | unknown) {
@@ -40,7 +41,7 @@ export async function createMeal(input: FormData | unknown) {
       throw new Error(parsed.error.errors[0].message);
     }
 
-    const { userId, name, foodLogs: foodLogsData = [], mealSummary, timeZone, clientTimestamp } = parsed.data;
+    const { userId, name, foodLogs: foodLogsData = [], mealCategories: mealCategoriesData = [], mealSummary, timeZone, clientTimestamp } = parsed.data;
 
     const result = await db.transaction(async (tx) => {
       const [meal] = await tx
@@ -54,7 +55,7 @@ export async function createMeal(input: FormData | unknown) {
         })
         .returning();
 
-      let insertedFoodLogs: Array<FoodLogPayload> = [];
+      let insertedFoodLogs: Array<InsertFoodLog> = [];
       if (foodLogsData.length > 0) {
         insertedFoodLogs = await tx
           .insert(foodLogs)
@@ -65,7 +66,18 @@ export async function createMeal(input: FormData | unknown) {
           .returning();
       }
 
-      return { meal, foodLogs: insertedFoodLogs };
+      let insertedMealCategories: Array<InsertMealCategory> = [];
+      if (mealCategoriesData.length > 0) {
+        insertedMealCategories = await tx
+          .insert(mealCategories)
+          .values(mealCategoriesData.map(category => ({
+            mealId: meal.id,
+            category: category as FoodCategory
+          })))
+          .returning();
+      }
+
+      return { meal, foodLogs: insertedFoodLogs, mealCategories: insertedMealCategories };
     });
 
     revalidatePath('/');

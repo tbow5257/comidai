@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, timestamp, decimal, customType } from "
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
+import { FoodCategoryEnum, FoodCategory } from "app/types/analysis-types";
 
 const timezoneType = customType<{ data: string }>({
   dataType() {
@@ -46,17 +47,32 @@ export const meals = pgTable("meals", {
   timeZone: timezoneType("time_zone").notNull()
 });
 
+export const mealCategories = pgTable("meal_categories", {
+  id: serial("id").primaryKey(),
+  mealId: integer("meal_id").references(() => meals.id).notNull(),
+  category: text("category").$type<FoodCategory>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const mealRelations = relations(meals, ({ one, many }) => ({
   user: one(users, {
     fields: [meals.userId],
     references: [users.id],
   }),
   foodLogs: many(foodLogs),
+  categories: many(mealCategories),
 }));
 
 export const foodLogRelations = relations(foodLogs, ({ one }) => ({
   meal: one(meals, {
     fields: [foodLogs.mealId],
+    references: [meals.id],
+  }),
+}));
+
+export const mealCategoryRelations = relations(mealCategories, ({ one }) => ({
+  meal: one(meals, {
+    fields: [mealCategories.mealId],
     references: [meals.id],
   }),
 }));
@@ -71,9 +87,18 @@ export const insertFoodLogSchema = createInsertSchema(foodLogs, {
 });
 export const selectFoodLogSchema = createSelectSchema(foodLogs);
 export const insertMealSchema = createInsertSchema(meals);
+export const insertMealCategorySchema = createInsertSchema(mealCategories, {
+  category: (schema) => schema.refine(
+    (val) => FoodCategoryEnum.options.includes(val as FoodCategory),
+    { message: `Category must be one of: ${FoodCategoryEnum.options.join(", ")}` }
+  )
+});
+export const selectMealCategorySchema = createSelectSchema(mealCategories);
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertFoodLog = typeof foodLogs.$inferInsert;
 export type InsertMeal = typeof meals.$inferInsert;
+export type InsertMealCategory = typeof mealCategories.$inferInsert;
 export type SelectFoodLog = typeof foodLogs.$inferSelect;
+export type SelectMealCategory = typeof mealCategories.$inferSelect;
