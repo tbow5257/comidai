@@ -14,11 +14,32 @@ export function VoiceRecorder({ onRecording, recording }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const chunks = useRef<Blob[]>([])
+  const mimeType = useRef<string>('audio/webm')
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorder.current = new MediaRecorder(stream)
+      
+      // Try to use a supported format for Whisper API
+      // Whisper supports: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm
+      const supportedTypes = [
+        'audio/webm',
+        'audio/mp3',
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/ogg',
+        'audio/wav'
+      ]
+      
+      // Find first supported mime type
+      for (const type of supportedTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType.current = type
+          break
+        }
+      }
+      
+      mediaRecorder.current = new MediaRecorder(stream, { mimeType: mimeType.current })
       chunks.current = []
 
       mediaRecorder.current.ondataavailable = (e) => {
@@ -26,9 +47,21 @@ export function VoiceRecorder({ onRecording, recording }: VoiceRecorderProps) {
       }
 
       mediaRecorder.current.onstop = async () => {
-        const audioBlob = new Blob(chunks.current, { type: 'audio/webm' })
+        // Map mime type to file extension
+        let extension = 'webm' // default
+        if (mimeType.current.includes('mp3')) extension = 'mp3'
+        else if (mimeType.current.includes('mp4')) extension = 'mp4'
+        else if (mimeType.current.includes('mpeg')) extension = 'mpeg'
+        else if (mimeType.current.includes('ogg')) extension = 'ogg'
+        else if (mimeType.current.includes('wav')) extension = 'wav'
+        else if (mimeType.current.includes('flac')) extension = 'flac'
+        
+        const audioBlob = new Blob(chunks.current, { type: mimeType.current })
         const formData = new FormData()
-        formData.append('audio', audioBlob)
+        
+        // Explicitly name the file with proper extension
+        formData.append('audio', audioBlob, `audio.${extension}`)
+        
         await onRecording(formData)
       }
 

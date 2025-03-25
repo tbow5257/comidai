@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import Image from 'next/image'
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mic } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import type { FoodCategory, FoodProfile } from "../types/analysis-types";
 import FoodEntryItem from "./food-entry-item";
 import { analyzeFoodImage } from "./analyze-food";
 import { createMeal } from "./submit-log-meal";
+import { VoiceRecorder } from "./voice-recorder";
+import { analyzeVoiceNote } from "./analyze-voice";
 
 export default function FoodEntry() {
   const { toast } = useToast();
@@ -24,6 +26,7 @@ export default function FoodEntry() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [originalFoods, setOriginalFoods] = useState<FoodProfile[]>([]);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const isMobile = useIsMobile();
 
   const analyzeFood = async (formData: FormData, previewUrl: string) => {
@@ -42,6 +45,35 @@ export default function FoodEntry() {
     } catch (error) {
       toast({
         title: "Analysis failed",
+        description: error instanceof Error ? error.message : 'Analysis failed',
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleVoiceRecording = async (formData: FormData) => {
+    try {
+      setIsAnalyzing(true);
+      const data = await analyzeVoiceNote(formData);
+      console.log('Voice analysis result:', data);
+      
+      setMealSummary(data.meal_summary);
+      setMealCategories(data.meal_categories);
+      setFoods(structuredClone(data.foods));
+      setOriginalFoods(data.foods);
+      
+      toast({
+        title: "Voice analysis complete",
+        description: "Results displayed below",
+      });
+      
+      setShowVoiceRecorder(false);
+    } catch (error) {
+      console.error('Voice analysis error:', error);
+      toast({
+        title: "Voice analysis failed",
         description: error instanceof Error ? error.message : 'Analysis failed',
         variant: "destructive",
       });
@@ -96,10 +128,32 @@ export default function FoodEntry() {
         </CardHeader>
         <CardContent>
           {!foods.length && (
-            <CameraUpload 
-              onCapture={analyzeFood}
-              analyzing={isAnalyzing}
-            />
+            <>
+              {showVoiceRecorder ? (
+                <VoiceRecorder 
+                  onRecording={handleVoiceRecording}
+                  recording={isAnalyzing}
+                />
+              ) : (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowVoiceRecorder(true)}
+                      className="w-full max-w-[250px]"
+                    >
+                      <Mic className="h-5 w-5 mr-2" />
+                      Record Voice Description
+                    </Button>
+                  </div>
+                  
+                  <CameraUpload 
+                    onCapture={analyzeFood}
+                    analyzing={isAnalyzing}
+                  />
+                </>
+              )}
+            </>
           )}
 
           {isAnalyzing && (
@@ -123,6 +177,7 @@ export default function FoodEntry() {
               </div>
             </div>
           )}
+          
           {mealSummary && (
             <div className="mb-6">
               <p className="text-sm font-medium text-center">
@@ -130,6 +185,7 @@ export default function FoodEntry() {
               </p>
             </div>
           )}
+          
           {foods.length > 0 && (
             <>
               {foods.map((food, i) => (

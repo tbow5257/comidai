@@ -1,9 +1,29 @@
 'use server'
 
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
+import { fromZodError } from "zod-validation-error";
+import { z } from "zod";
+
 import { logWithTime } from "@/lib/utils";
+import { FOOD_ANALYSIS_PROMPT, MealSchema } from "app/types/analysis-types";
+
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Map MIME types to file extensions that Whisper supports
+function getMimeTypeExtension(mimeType: string): string {
+  if (mimeType.includes('webm')) return 'webm';
+  if (mimeType.includes('mp3')) return 'mp3';
+  if (mimeType.includes('mp4')) return 'mp4';
+  if (mimeType.includes('mpeg')) return 'mpga';
+  if (mimeType.includes('x-m4a')) return 'm4a';
+  if (mimeType.includes('ogg')) return 'ogg';
+  if (mimeType.includes('wav') || mimeType.includes('wave')) return 'wav';
+  if (mimeType.includes('flac')) return 'flac';
+  
+  // Default to webm if unknown
+  return 'webm';
+}
 
 export async function analyzeVoiceNote(formData: FormData) {
   try {
@@ -15,17 +35,35 @@ export async function analyzeVoiceNote(formData: FormData) {
       type: audio.type
     });
 
-    // Convert Blob to File
-    const audioFile = new File([audio], "audio.webm", { 
-      type: audio.type,
-      lastModified: Date.now(),
+    // Determine file extension directly from MIME type
+    const fileExtension = getMimeTypeExtension(audio.type);
+    const contentType = audio.type || `audio/${fileExtension}`;
+
+    // Convert the blob to a buffer for the OpenAI API
+    const arrayBuffer = await audio.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    logWithTime("Using the toFile utility for Whisper API compatibility", {
+      bufferSize: buffer.length,
+      contentType: contentType
     });
 
-    // Transcribe audio using Whisper
+    // Create a file using the OpenAI toFile utility
+    const audioFile = await toFile(
+      buffer, 
+      `audio.${fileExtension}`, 
+      { type: contentType }
+    );
+
+    // Transcribe audio using the toFile utility from OpenAI
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
-      model: "whisper-1",
+      model: "gpt-4o-transcribe",
       language: "en"
+    });
+
+    logWithTime("Transcription received", {
+      text: transcription.text
     });
 
     // Use the transcription to analyze food content
@@ -38,23 +76,7 @@ export async function analyzeVoiceNote(formData: FormData) {
             Analyze this food description and identify each food item mentioned:
             "${transcription.text}"
             
-            Follow the same format as image analysis:
-            {
-              foods: [
-                {
-                  name: string,
-                  estimated_portion: {
-                    count: number,
-                    unit: 'g' | 'oz'
-                  },
-                  size_description: string,
-                  typical_serving: string,
-                  calories: number,
-                  protein: number
-                }
-              ],
-              meal_summary: string
-            }
+            ${FOOD_ANALYSIS_PROMPT}
           `
         }
       ],
@@ -62,9 +84,32 @@ export async function analyzeVoiceNote(formData: FormData) {
     });
 
     const content = analysis.choices[0].message.content;
-    if (!content) throw new Error("No response from analysis");
 
-    return JSON.parse(content);
+    if (!content) {
+      logWithTime("No response from text analysis model");
+      throw new Error("No response from text analysis model");
+    }  
+
+    try {
+      const parsedContent = JSON.parse(content);
+      const validatedMeal = MealSchema.parse(parsedContent);
+      logWithTime("Food image analysis complete");
+      return validatedMeal;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        logWithTime("Validation error in OpenAI response", {
+          error: validationError.message
+        });
+        throw new Error(`Invalid response format: ${validationError.message}`);
+      }
+      if (error instanceof SyntaxError) {
+        logWithTime("JSON parsing error in OpenAI response");
+        throw new Error("Invalid JSON in OpenAI response");
+      }
+      throw error;
+    }
+
   } catch (error: any) {
     logWithTime('Error in analyze-voice action', {
       error: error.message,
