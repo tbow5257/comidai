@@ -1,8 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { GroupedLogs } from "./food-log";
+import { MealsWithLogs } from "app/page";
 
-export function NutritionalChart({foodLogs, dailyCalorieGoal }: { dailyCalorieGoal?: number | null, foodLogs: GroupedLogs}) {
+export function NutritionalChart({foodLogs, dailyCalorieGoal }: { dailyCalorieGoal?: number | null, foodLogs: MealsWithLogs}) {
 
   const today = new Date().setHours(0, 0, 0, 0);
   
@@ -13,10 +13,10 @@ export function NutritionalChart({foodLogs, dailyCalorieGoal }: { dailyCalorieGo
 
       return mealDate.getTime() === today;
     })
-    .flatMap(meal => meal.logs);
+    .flatMap(meal => meal.foodLogs);
 
-  const calories = todaysFoodLogs?.reduce((sum, log) => sum + log.calories, 0);
-  const protein = todaysFoodLogs?.reduce((sum, log) => sum + Number(log.protein), 0);
+  const calories = todaysFoodLogs?.reduce((sum, log) => sum + log.calories, 0) ?? 0;
+  const protein = todaysFoodLogs?.reduce((sum, log) => sum + Number(log.protein), 0) ?? 0;
 
   const calorieProgress = (calories / (dailyCalorieGoal ?? 2000)) * 100;
 

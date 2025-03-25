@@ -8,9 +8,23 @@ import { FoodLog } from "@/components/food-log";
 import { NutritionalChart } from "@/components/nutritional-chart";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuthUser } from "./lib/auth";
-import { GroupedLogs } from "@/components/food-log";
 import { ClientToast } from "./components/client-toast";
 import { getCookie } from "./actions";
+
+export type MealsWithLogs = Awaited<ReturnType<typeof getMealsWithLogs>>;
+
+// Then extract your query into a function:
+async function getMealsWithLogs(userId: number) {
+  return await db.query.meals.findMany({
+    with: {
+      foodLogs: true,
+      categories: true
+    },
+    where: eq(meals.userId, userId),
+    orderBy: desc(meals.createdAt),
+    limit: 5
+  });
+}
 
 export default async function HomePage() {
   const user = await getAuthUser()
@@ -20,30 +34,9 @@ export default async function HomePage() {
     redirect("/auth");
   }
 
-  const mealsWithLogs = await db.query.meals.findMany({
-    with: {
-      foodLogs: true
-    },
-    where: eq(meals.userId, user.id),
-    orderBy: desc(meals.createdAt),
-    limit: 5
-  });
+  const mealsWithLogs = await getMealsWithLogs(user.id);
 
-  const groupedLogs = mealsWithLogs.reduce<GroupedLogs>((acc, meal) => {
-    acc[meal.id] = {
-      mealName: meal.name,
-      createdAt: meal.createdAt,
-      timeZone: meal.timeZone,
-      logs: meal.foodLogs.map(log => ({
-        ...log,
-        meal: {
-          id: meal.id,
-          name: meal.name,
-        }
-      }))
-    };
-    return acc;
-  }, {});
+  console.log(mealsWithLogs)
 
   return (
     <>
@@ -59,14 +52,14 @@ export default async function HomePage() {
           <CardHeader>
             <CardTitle>Today's Progress</CardTitle>
           </CardHeader>
-          <NutritionalChart foodLogs={groupedLogs} dailyCalorieGoal={user.dailyCalorieGoal} />
+          <NutritionalChart foodLogs={mealsWithLogs} dailyCalorieGoal={user.dailyCalorieGoal} />
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Recent Meals</CardTitle>
           </CardHeader>
-          <FoodLog foodLogs={groupedLogs} />
+          <FoodLog foodLogs={mealsWithLogs} />
         </Card>
       </div>
     </div>
