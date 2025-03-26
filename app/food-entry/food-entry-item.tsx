@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react"
+import { Trash2, Lock, Unlock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 const GRAMS_PER_OUNCE = 28.3495;
@@ -48,8 +48,9 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
   const [activeAdjuster, setActiveAdjuster] = useState<'portion' | 'calories' | 'protein' | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   // Store base values for proportional calculations
+  const [isProportionLocked, setIsProportionLocked] = useState(true);
 
-  const [baseValues] = useState({
+  const [baseValues, setBaseValues] = useState({
     calories: food.calories,
     protein: food.protein,
     portion: food.estimated_portion.count
@@ -57,6 +58,17 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
 
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const { toast } = useToast()
+
+  // Update base values when proportion lock is toggled
+  useEffect(() => {
+    if (isProportionLocked) {
+      setBaseValues({
+        calories: food.calories,
+        protein: food.protein,
+        portion: food.estimated_portion.count
+      });
+    }
+  }, [isProportionLocked, food]);
 
   const handleUnitChange = (newUnit: 'g' | 'oz') => {
     const currentCount = food.estimated_portion.count;
@@ -80,6 +92,24 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     });
     
   }
+
+  // Update individual field without proportionality
+  const updateIndividually = (
+    newValue: number,
+    field: keyof BaseValues
+  ) => {
+    const updatedFood = { ...food };
+    
+    if (field === 'portion') {
+      updatedFood.estimated_portion.count = newValue;
+    } else {
+      updatedFood[field] = field === 'protein' ? 
+        Math.round(newValue * 10) / 10 : 
+        Math.round(newValue);
+    }
+
+    onUpdate(updatedFood);
+  };
 
   // Calculate ratio for any numeric change
   const updateProportionally = (
@@ -107,18 +137,54 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     onUpdate(updatedFood);
   };
 
+  const handleValueChange = (
+    newValue: number,
+    field: keyof BaseValues
+  ) => {
+    if (isProportionLocked) {
+      updateProportionally(newValue, field);
+    } else {
+      updateIndividually(newValue, field);
+    }
+  };
+
   const handleIncrement = (field: keyof BaseValues, step: number) => {
     const newValue = field === 'portion' ? 
       food.estimated_portion.count + step :
       (food[field] as number) + step;
-    updateProportionally(newValue, field);
+    handleValueChange(newValue, field);
   };
 
   const handleDecrement = (field: keyof BaseValues, step: number) => {
     const newValue = field === 'portion' ? 
       Math.max(0, food.estimated_portion.count - step) :
       Math.max(0, (food[field] as number) - step);
-    updateProportionally(newValue, field);
+    handleValueChange(newValue, field);
+  };
+
+  const toggleProportionLock = () => {
+    setIsProportionLocked(!isProportionLocked);
+    
+    // If locking, update base values to current values
+    if (!isProportionLocked) {
+      setBaseValues({
+        calories: food.calories,
+        protein: food.protein,
+        portion: food.estimated_portion.count
+      });
+
+      toast({
+        title: "Proportional changes enabled",
+        description: "Values will change together",
+        duration: 1500
+      });
+    } else {
+      toast({
+        title: "Independent changes enabled",
+        description: "Values will change individually",
+        duration: 1500
+      });
+    }
   };
 
   const ValueAdjuster = ({ 
@@ -126,13 +192,17 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     value, 
     unit, 
     field, 
-    step 
+    step,
+    hasConnector = false,
+    isFirst = false, 
   }: { 
     label: string;
     value: number;
     unit?: string;
     field: 'portion' | 'calories' | 'protein';
     step: number;
+    hasConnector?: boolean;
+    isFirst?: boolean;
   }) => {
     const isActive = activeAdjuster === field;
     const inputRef = useRef<HTMLInputElement>(null);
@@ -158,7 +228,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = parseFloat(e.target.value);
       if (!isNaN(newValue)) {
-        updateProportionally(newValue, field);
+        handleValueChange(newValue, field);
       }
     };
 
@@ -195,8 +265,14 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
               )}
               onClick={handleValueClick}
             >
+              {/* Connector line from value to value */}
+              {hasConnector && isProportionLocked && !isFirst && (
+                <div className="absolute left-1/2 -top-8 h-8 w-0.5 bg-orange-400 z-10"></div>
+              )}
+              
               {isActive && isEditing ? (
                 <input
+                  ref={inputRef}
                   autoFocus
                   type="number"
                   value={value}
@@ -240,6 +316,27 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
     );
   };
 
+  const LockButton = () => (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleProportionLock}
+      className={cn(
+        "h-8 w-8 rounded-full transition-colors",
+        isProportionLocked ? 
+          "bg-orange-100 hover:bg-orange-200 text-orange-600" : 
+          "bg-gray-100 hover:bg-gray-200 text-gray-600"
+      )}
+      title={isProportionLocked ? "Values change proportionally" : "Values change independently"}
+    >
+      {isProportionLocked ? (
+        <Lock className="h-4 w-4" />
+      ) : (
+        <Unlock className="h-4 w-4" />
+      )}
+    </Button>
+  );
+
   const handleRemove = () => {
     onRemove()
     toast({
@@ -281,7 +378,10 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-medium">{food.name}</h3>
-            <RemoveButton />
+            <div className="flex items-center space-x-2">
+              <LockButton />
+              <RemoveButton />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -291,6 +391,8 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
               unit={food.estimated_portion.unit}
               field="portion"
               step={1}
+              hasConnector={true}
+              isFirst={true}
             />
 
             <ValueAdjuster
@@ -298,6 +400,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
               value={food.calories}
               field="calories"
               step={10}
+              hasConnector={true}
             />
 
             <ValueAdjuster
@@ -305,6 +408,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
               value={food.protein}
               field="protein"
               step={1}
+              hasConnector={true}
             />
           </div>
 
@@ -338,7 +442,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
               type="number"
               step="0.1"
               value={Math.round(food.estimated_portion.count * 10) / 10}
-              onChange={(e) => updateProportionally(Number(e.target.value), 'portion')}
+              onChange={(e) => handleValueChange(Number(e.target.value), 'portion')}
               className="w-24"
               min={0}
             />
@@ -369,7 +473,7 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
                 value={Math.round(food.calories)}
                 min={0}
                 step={1}
-                onChange={(e) => updateProportionally(Number(e.target.value), 'calories')}
+                onChange={(e) => handleValueChange(Number(e.target.value), 'calories')}
                 className="w-24"
               />
               <span>calories</span>
@@ -382,14 +486,23 @@ const FoodEntryItem: React.FC<FoodEntryItemProps> = ({ food, onUpdate, onRemove 
                 onChange={(e) => {
                   const value = Number(e.target.value);
                   if (!isNaN(value)) {
-                    updateProportionally(Math.round(value * 10) / 10, 'protein');
+                    handleValueChange(Math.round(value * 10) / 10, 'protein');
                   }
                 }}
                 className="w-24"
               />
               <span>protein (g)</span>
+
+              {isProportionLocked && (
+                <div className="flex items-center ml-2">
+                  <div className="h-0.5 w-10 bg-orange-400"></div>
+                </div>
+              )}
             </div>
-            <RemoveButton />
+            <div className="flex items-center space-x-2">
+              <LockButton />
+              <RemoveButton />
+            </div>
           </div>
         </div>
       )}
