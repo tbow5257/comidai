@@ -5,10 +5,14 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "check": "tsc",
     "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
     "seed": "tsx ./app/lib/db/seed.ts",
-    "job:cleanup-images": "tsx cron/cleanup-images.ts"
+    "job:cleanup-images": "tsx cron/cleanup-images.ts",
+    "deploy": "npm run db:migrate && npm run seed && npm run start"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.4",
