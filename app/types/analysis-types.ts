@@ -53,14 +53,17 @@ const foodUnits = FoodUnitEnum.options.map(unit => `"${unit}"`).join(" | ");
 
 export const FOOD_ANALYSIS_PROMPT = `
                   For each item, provide:
-                  - Estimated portion size in photo or text (in grams or ounces), and the calories and protein per portion
+                  - Estimated portion size, this size MUST BE IN GRAMS OR OUNCES, and the calories and protein per for that portion amount
                   
-                  - Size description using common household items (e.g., palm sized, golf ball), with estimatei
-                  - Of that size description, the metrics of calories and protein associated with that size description (in grams)
+                  - Size description using common household items (e.g., palm sized, golf ball), with estimate
+                  - For that size description, the metrics of calories and protein associated with that size description (in grams)
                   
                   For the whole meal:
                   - meal_summary: A concise 150-char max summary that creatively describes the meal, capturing key details
                   - meal_categories: Categorize each food item into basic food types: ${FoodCategoryEnum.options.join(", ")}
+                  
+                  Important: For eggs, convert to grams (1 large egg ≈ 50g) or ounces (1 large egg ≈ 1.75oz).
+                  
                   Respond with JSON in the following format:
                   {
                     foods: [

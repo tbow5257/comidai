@@ -99,12 +99,17 @@ export async function analyzeVoiceNote(formData: FormData) {
       if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         logWithTime("Validation error in OpenAI response", {
-          error: validationError.message
+          error: validationError.message,
+          content: content,
+          details: error.errors
         });
         throw new Error(`Invalid response format: ${validationError.message}`);
       }
       if (error instanceof SyntaxError) {
-        logWithTime("JSON parsing error in OpenAI response");
+        logWithTime("JSON parsing error in OpenAI response", {
+          content: content,
+          error: error.message
+        });
         throw new Error("Invalid JSON in OpenAI response");
       }
       throw error;
@@ -113,7 +118,9 @@ export async function analyzeVoiceNote(formData: FormData) {
   } catch (error: any) {
     logWithTime('Error in analyze-voice action', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      type: error.constructor.name,
+      ...(error.response && { response: error.response })
     });
     throw error;
   }
