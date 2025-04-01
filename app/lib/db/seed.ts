@@ -27,7 +27,7 @@ async function seed() {
     if (!jackUser.length) {
       const hashedPassword = await hash("temp420", 10);
       await db.insert(users).values({
-        username: "Jack",
+        username: "jack",
         password: hashedPassword,
       }).execute();
     }
@@ -41,10 +41,12 @@ async function seed() {
     if (!anthonyUser.length) {
       const hashedPassword = await hash("temp69", 10);
       await db.insert(users).values({
-        username: "Anthony",
+        username: "anthony",
         password: hashedPassword,
       }).execute();
     }
+
+    console.log('seed completed!');
 }
   
 seed().catch(console.error);
