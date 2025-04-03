@@ -6,9 +6,10 @@ import { db } from "@/lib/db";
 import { meals, foodLogs, mealCategories, insertFoodLogSchema, insertMealCategorySchema, InsertFoodLog, InsertMealCategory } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
 import { FoodCategory, FoodCategoryEnum } from "app/types/analysis-types";
+import { getAuthUser } from "@/lib/auth";
 
 const createMealPayloadSchema = z.object({
-    userId: z.number(),
+    userId: z.number().optional(),
     name: z.string().min(1),
     timeZone: z.string()
       .refine((tz) => {
@@ -41,13 +42,18 @@ export async function createMeal(input: FormData | unknown) {
       throw new Error(parsed.error.errors[0].message);
     }
 
-    const { userId, name, foodLogs: foodLogsData = [], mealCategories: mealCategoriesData = [], mealSummary, timeZone, clientTimestamp } = parsed.data;
+    const user = await getAuthUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { name, foodLogs: foodLogsData = [], mealCategories: mealCategoriesData = [], mealSummary, timeZone, clientTimestamp } = parsed.data;
 
     const result = await db.transaction(async (tx) => {
       const [meal] = await tx
         .insert(meals)
         .values({
-          userId,
+          userId: user.id,
           name,
           mealSummary,
           timeZone,

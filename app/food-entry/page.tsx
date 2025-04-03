@@ -86,7 +86,6 @@ export default function FoodEntry() {
     startTransition(async () => {
       try {
         const payload = {
-          userId: 1,
           name: `Meal ${new Date().toLocaleTimeString()}`,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           clientTimestamp: new Date().toISOString(),
