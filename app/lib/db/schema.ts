@@ -79,12 +79,7 @@ export const mealCategoryRelations = relations(mealCategories, ({ one }) => ({
 
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
-export const insertFoodLogSchema = createInsertSchema(foodLogs, {
-  portionUnit: (schema) => schema.refine(
-    (val) => ['g', 'oz'].includes(val), 
-    { message: "Portion unit must be 'g' or 'oz'" }
-  )
-});
+export const insertFoodLogSchema = createInsertSchema(foodLogs);
 export const selectFoodLogSchema = createSelectSchema(foodLogs);
 export const insertMealSchema = createInsertSchema(meals);
 export const insertMealCategorySchema = createInsertSchema(mealCategories, {
